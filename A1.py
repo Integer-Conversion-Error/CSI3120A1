@@ -29,7 +29,10 @@ def is_valid_var_name(s: str) -> bool:
     :return: True if the variable name starts with a character,
     and contains only characters and digits. Returns False otherwise.
     """
-    # TODO
+
+
+    if s and (s[0].isalpha() or s[0] == '_') and s.isidentifier():
+        return True
     return False
 
 
@@ -59,8 +62,15 @@ class ParseTree:
         self.root = root
 
     def print_tree(self, node: Optional[Node] = None, level: int = 0) -> None:
-        # TODO
-        print("")
+        if node is None:
+            node = self.root  # Start from the root if no node is passed
+
+        # Print the node's elem at the current level, indented based on the level
+        print("  " * level + str(node.elem))
+
+        # Recursively print all child nodes, increasing the level for indentation
+        for child in node.children:
+            self.print_tree(child, level + 1)
 
 
 
