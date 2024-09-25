@@ -1,6 +1,8 @@
 import os
 from typing import Union, List, Optional
 
+
+
 alphabet_chars = list("abcdefghijklmnopqrstuvwxyz") + list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 numeric_chars = list("0123456789")
 var_chars = alphabet_chars + numeric_chars
@@ -88,6 +90,8 @@ def parse_tokens(s_: str, association_type: Optional[str] = None) -> Union[List[
     """
 
     s = s_[:]  #  Don't modify the original input string
+
+
     # TODO
 
     return []
@@ -154,6 +158,9 @@ def build_parse_tree_rec(tokens: List[str], node: Optional[Node] = None) -> Node
     """
 
     #TODO
+
+
+
     return Node()
 
 
@@ -170,6 +177,7 @@ def build_parse_tree(tokens: List[str]) -> ParseTree:
 if __name__ == "__main__":
 
     print("\n\nChecking valid examples...")
+    ##print(os.getcwd()) 
     read_lines_from_txt_check_validity(valid_examples_fp)
     read_lines_from_txt_output_parse_tree(valid_examples_fp)
 
