@@ -175,7 +175,7 @@ if __name__ == "__main__":
 
     print("Checking invalid examples...")
     read_lines_from_txt_check_validity(invalid_examples_fp)
-
+    
     # Optional
     print("\n\nAssociation Examples:")
     sample = ["a", "b", "c"]
