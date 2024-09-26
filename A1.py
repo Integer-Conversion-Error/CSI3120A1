@@ -6,7 +6,8 @@ from typing import Union, List, Optional
 alphabet_chars = list("abcdefghijklmnopqrstuvwxyz") + list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 numeric_chars = list("0123456789")
 var_chars = alphabet_chars + numeric_chars
-all_valid_chars = var_chars + ["(", ")", ".", "\\"]
+funky_chars = ["(", ")", ".", "\\"]
+all_valid_chars = var_chars + funky_chars
 valid_examples_fp = "./valid_examples.txt"
 invalid_examples_fp = "./invalid_examples.txt"
 
@@ -33,7 +34,7 @@ def is_valid_var_name(s: str) -> bool:
     """
 
 
-    if s and (s[0].isalpha() or s[0] == '_') and s.isidentifier():
+    if s and (s[0] in alphabet_chars or s[0] == '_'): ##if s and (s[0].isalpha() or s[0] == '_') and s.isidentifier():
         return True
     return False
 
@@ -84,17 +85,49 @@ def parse_tokens(s_: str, association_type: Optional[str] = None) -> Union[List[
     valid variable names
     opening and closing parenthesis
     Note that dots are replaced with corresponding parenthesis
+
     :param s_: the input string
     :param association_type: If not None, add brackets to make expressions non-ambiguous
     :return: A List of tokens (strings) if a valid input, otherwise False
     """
-
+    ##is_valid_var_name(s: str) 
+    openP = 0
+    closedP = 0
+    proto_token = ""
     s = s_[:]  #  Don't modify the original input string
+    post_tokens = []
+    pre_tokens = s.split(" ")
+    for pre_token in pre_tokens:
+        for char_token in pre_token:
+            if char_token == "(": ## Parentheses Case 1
+                post_tokens.append(char_token)
+            elif char_token == ")": ## Parentheses Case 2
+                post_tokens.append(char_token)
+            elif char_token == "\\": ## Lambda Case
+                post_tokens.append(char_token)
+            elif char_token in var_chars or char_token == "_": ## Variable Case
+                proto_token += char_token
+            if proto_token != "":
+                post_tokens.append(proto_token)
+                proto_token = ""
+            
+    for token in post_tokens: 
+        print(token)
+        if  "(" == token:
+            openP += 1
+        if ")" == token:
+            closedP += 1
+    print(post_tokens)
+    if closedP != openP:
+        print("Parentheses Error! ")
+    else: 
+        print("Good Parentheses! ")
+            
 
-
+    print("_____________________EndLine___________________________")
     # TODO
 
-    return []
+    return post_tokens
 
 
 def read_lines_from_txt_check_validity(fp: [str, os.PathLike]) -> None: # type: ignore
@@ -107,6 +140,7 @@ def read_lines_from_txt_check_validity(fp: [str, os.PathLike]) -> None: # type: 
     """
     lines = read_lines_from_txt(fp)
     valid_lines = []
+    #print(parse_tokens(lines[0]))
     for l in lines:
         tokens = parse_tokens(l)
         if tokens:
@@ -177,19 +211,23 @@ def build_parse_tree(tokens: List[str]) -> ParseTree:
 if __name__ == "__main__":
 
     print("\n\nChecking valid examples...")
-    ##print(os.getcwd()) 
-    read_lines_from_txt_check_validity(valid_examples_fp)
-    read_lines_from_txt_output_parse_tree(valid_examples_fp)
 
-    print("Checking invalid examples...")
-    read_lines_from_txt_check_validity(invalid_examples_fp)
+
+    # lines = read_lines_from_txt(valid_examples_fp)
+    # valid_lines = []
+    # print(parse_tokens(lines[0]))
+    read_lines_from_txt_check_validity(valid_examples_fp)
+    # read_lines_from_txt_output_parse_tree(valid_examples_fp)
+
+    # print("Checking invalid examples...")
+    # read_lines_from_txt_check_validity(invalid_examples_fp)
     
-    # Optional
-    print("\n\nAssociation Examples:")
-    sample = ["a", "b", "c"]
-    print("Right association")
-    associated_sample_r = add_associativity(sample, association_type="right")
-    print(associated_sample_r)
-    print("Left association")
-    associated_sample_l = add_associativity(sample, association_type="left")
-    print(associated_sample_l)
+    # # Optional
+    # print("\n\nAssociation Examples:")
+    # sample = ["a", "b", "c"]
+    # print("Right association")
+    # associated_sample_r = add_associativity(sample, association_type="right")
+    # print(associated_sample_r)
+    # print("Left association")
+    # associated_sample_l = add_associativity(sample, association_type="left")
+    # print(associated_sample_l)
