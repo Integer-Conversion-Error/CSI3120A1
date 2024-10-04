@@ -93,6 +93,7 @@ def parse_tokens(s_: str, association_type: Optional[str] = None) -> Union[List[
     ##is_valid_var_name(s: str) 
     openP = 0
     closedP = 0
+    abstractionCount = 0
     proto_token = ""
     s = s_[:]  #  Don't modify the original input string
     post_tokens = []
@@ -107,10 +108,16 @@ def parse_tokens(s_: str, association_type: Optional[str] = None) -> Union[List[
                 post_tokens.append(char_token)
             elif char_token in var_chars or char_token == "_": ## Variable Case
                 proto_token += char_token
+            elif char_token == ".":
+                post_tokens.append("(")
+                abstractionCount += 1
             if proto_token != "":
                 post_tokens.append(proto_token)
                 proto_token = ""
-            
+    
+    for x in range(abstractionCount):
+        post_tokens.append(")")
+    
     for token in post_tokens: 
         print(token)
         if  "(" == token:
@@ -216,7 +223,7 @@ if __name__ == "__main__":
     # lines = read_lines_from_txt(valid_examples_fp)
     # valid_lines = []
     # print(parse_tokens(lines[0]))
-    read_lines_from_txt_check_validity(valid_examples_fp)
+    read_lines_from_txt_check_validity(invalid_examples_fp)
     # read_lines_from_txt_output_parse_tree(valid_examples_fp)
 
     # print("Checking invalid examples...")
