@@ -69,7 +69,7 @@ class ParseTree:
             node = self.root  # Start from the root if no node is passed
 
         # Print the node's elem at the current level, indented based on the level
-        print("  " * level + str(node.elem))
+        print("\t" * level + str(node.elem))
 
         # Recursively print all child nodes, increasing the level for indentation
         for child in node.children:
@@ -94,6 +94,7 @@ def parse_tokens(s_: str, association_type: Optional[str] = None) -> Union[List[
     openP = 0
     closedP = 0
     abstractionCount = 0
+    lambdaFlag = 0
     proto_token = ""
     s = s_[:]  #  Don't modify the original input string
     post_tokens = []
@@ -105,15 +106,22 @@ def parse_tokens(s_: str, association_type: Optional[str] = None) -> Union[List[
             elif char_token == ")": ## Parentheses Case 2
                 post_tokens.append(char_token)
             elif char_token == "\\": ## Lambda Case
-                post_tokens.append(char_token)
+                post_tokens.append(char_token) 
+                lambdaFlag += 1
             elif char_token in var_chars or char_token == "_": ## Variable Case
                 proto_token += char_token
             elif char_token == ".":
                 post_tokens.append("(")
                 abstractionCount += 1
-            if proto_token != "":
-                post_tokens.append(proto_token)
-                proto_token = ""
+
+        if proto_token != "" and lambdaFlag > 0:
+            post_tokens.append(proto_token)
+            proto_token = ""
+            lambdaFlag -= 1
+        else:
+            print(post_tokens)
+            post_tokens = False
+            return post_tokens
     
     for x in range(abstractionCount):
         post_tokens.append(")")
@@ -127,6 +135,7 @@ def parse_tokens(s_: str, association_type: Optional[str] = None) -> Union[List[
     print(post_tokens)
     if closedP != openP:
         print("Parentheses Error! ")
+        post_tokens = False
     else: 
         print("Good Parentheses! ")
             
@@ -220,10 +229,10 @@ if __name__ == "__main__":
     print("\n\nChecking valid examples...")
 
 
-    # lines = read_lines_from_txt(valid_examples_fp)
-    # valid_lines = []
-    # print(parse_tokens(lines[0]))
-    read_lines_from_txt_check_validity(invalid_examples_fp)
+    lines = read_lines_from_txt(invalid_examples_fp)
+    valid_lines = []
+    print(parse_tokens(lines[1]))
+    # read_lines_from_txt_check_validity(valid_examples_fp)
     # read_lines_from_txt_output_parse_tree(valid_examples_fp)
 
     # print("Checking invalid examples...")
