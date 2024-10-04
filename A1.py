@@ -95,12 +95,15 @@ def parse_tokens(s_: str, association_type: Optional[str] = None) -> Union[List[
     closedP = 0
     abstractionCount = 0
     lambdaFlag = 0
+    postLambdaFlag = 0
     proto_token = ""
     s = s_[:]  #  Don't modify the original input string
     post_tokens = []
-    pre_tokens = s.split(" ")
-    for pre_token in pre_tokens:
-        for char_token in pre_token:
+    pre_tokens = s.split(" ")## MAYBE DO RECURSIVELY, KEEP PASSING SMALLER AND SMALLER STRINGS AND APPEND THEM TO LIST
+    print(pre_tokens)
+    for pre_token in pre_tokens: ## BREAK APART THE TOKENS WHEN THERE ARE THINGS STUCK TO THE VARIABLES WITHOUT WHITESPACE
+        for x in range(len(pre_token)):
+            char_token = pre_token[x]
             if char_token == "(": ## Parentheses Case 1
                 post_tokens.append(char_token)
             elif char_token == ")": ## Parentheses Case 2
@@ -108,7 +111,7 @@ def parse_tokens(s_: str, association_type: Optional[str] = None) -> Union[List[
             elif char_token == "\\": ## Lambda Case
                 post_tokens.append(char_token) 
                 lambdaFlag += 1
-            elif char_token in var_chars or char_token == "_": ## Variable Case
+            elif char_token in var_chars: ## Variable Case
                 proto_token += char_token
             elif char_token == ".":
                 post_tokens.append("(")
@@ -119,9 +122,9 @@ def parse_tokens(s_: str, association_type: Optional[str] = None) -> Union[List[
             proto_token = ""
             lambdaFlag -= 1
         else:
-            print(post_tokens)
-            post_tokens = False
-            return post_tokens
+            print(proto_token)
+            # post_tokens = False
+            # return post_tokens
     
     for x in range(abstractionCount):
         post_tokens.append(")")
@@ -135,7 +138,7 @@ def parse_tokens(s_: str, association_type: Optional[str] = None) -> Union[List[
     print(post_tokens)
     if closedP != openP:
         print("Parentheses Error! ")
-        post_tokens = False
+        # post_tokens = False
     else: 
         print("Good Parentheses! ")
             
@@ -229,9 +232,26 @@ if __name__ == "__main__":
     print("\n\nChecking valid examples...")
 
 
-    lines = read_lines_from_txt(invalid_examples_fp)
-    valid_lines = []
-    print(parse_tokens(lines[1]))
+    # lines = read_lines_from_txt(invalid_examples_fp)
+    # valid_lines = []
+    # print(parse_tokens("\\ x . a b"))
+
+    # Sample list
+    my_list = ['a', 'b', 'c', 'd', 'e']
+
+    # Index of the element to be split
+    index_to_split = 2  # splitting 'c'
+
+    # The two new elements to insert
+    new_element1 = 'x'
+    new_element2 = 'y'
+
+    # Perform the split
+    my_list[index_to_split:index_to_split + 1] = [new_element1, new_element2]
+
+    # Print the updated list
+    print(my_list)
+
     # read_lines_from_txt_check_validity(valid_examples_fp)
     # read_lines_from_txt_output_parse_tree(valid_examples_fp)
 
