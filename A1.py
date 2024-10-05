@@ -77,6 +77,14 @@ class ParseTree:
 
 def parse_expressions_recursively(s_: str) -> List[str]:
     return ""
+    # if <var>:
+        # it should be fine to not recurse and move to next index
+    # elif '(' <expr> ')':
+    #   # recurse into the expression (find the parantheses)
+    # elif '\' <var> <expr>:
+        # recurse into expression
+    # elif <expr> <expr>:
+        # recurse into first expression (left one)
             
 
 
