@@ -11,7 +11,7 @@ all_valid_chars = var_chars + funky_chars
 valid_examples_fp = "./valid_examples.txt"
 invalid_examples_fp = "./invalid_examples.txt"
 
-currentChar = ""
+recursionLevel = 0
 
 def read_lines_from_txt(fp: [str, os.PathLike]) -> List[str]: # type: ignore
     """
@@ -108,7 +108,7 @@ def is_valid_var_name(s: str) -> bool:
     :return: True if the variable name starts with a character,
     and contains only characters and digits. Returns False otherwise.
     """
-    if s[0] not in alphabet_chars:
+    if s not in alphabet_chars:
         return False
     else:
         if len(s) == 0:
@@ -134,6 +134,7 @@ def var(s): ## Start from first char, end at last char which a valid var name wo
             return firstNonVar
 
     return False
+
 
     
 def l_expr(s): # <lambda_expr>::= '\' <var> '.' <expr> | '\' <var> <paren_expr> 
@@ -172,6 +173,9 @@ def p_expr(s):
     firstNonSpaceIndex = findFirstNonSpace(s)
     print("<p_expr>: \t" + s[firstNonSpaceIndex:])
     lastParen = findLastParen(s)
+    if not lastParen:
+        print("Syntax error: expecting ')'")
+        return ""
     for x in range(firstNonSpaceIndex,len(s)):
         if s[x] == ".":
             print("Period at position:", x)
@@ -180,6 +184,8 @@ def p_expr(s):
             return "(" + expr(s[x+1:lastParen]) + ")"
     print("<p_expr> is returning nothing! input: ", s)    
     return "" ## need to handle this
+
+
 
 def expr(s):
     print("<expr>: \t" + s)
@@ -192,13 +198,18 @@ def expr(s):
         elif s[x] == " ":
             continue
         else:
-            return s
+            if var(s[x:]) != False:
+                print(s[x:], s[var(s[x:]):])
+                return s[x:var(s[x:])] + expr(s[var(s[x:]):])
+            else: 
+                return s
         
     return ""
 
-
-
 def parse_tokens(s_: str, association_type: Optional[str] = None) -> Union[List[str], bool]:
+    return expr(s_)
+
+def deprct_parse_tokens(s_: str, association_type: Optional[str] = None) -> Union[List[str], bool]:
     """
     Gets the final tokens for valid strings as a list of strings, only for valid syntax,
     where tokens are (no whitespace included)
