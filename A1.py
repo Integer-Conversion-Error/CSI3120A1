@@ -11,6 +11,7 @@ all_valid_chars = var_chars + funky_chars
 valid_examples_fp = "./valid_examples.txt"
 invalid_examples_fp = "./invalid_examples.txt"
 
+currentChar = ""
 
 def read_lines_from_txt(fp: [str, os.PathLike]) -> List[str]: # type: ignore
     """
@@ -85,7 +86,116 @@ def parse_expressions_recursively(s_: str) -> List[str]:
         # recurse into expression
     # elif <expr> <expr>:
         # recurse into first expression (left one)
-            
+
+
+
+def is_valid_var_name(s: str) -> bool:
+    """
+    :param s: Candidate input variable name
+    :return: True if the variable name starts with a character,
+    and contains only characters and digits. Returns False otherwise.
+    """
+
+
+    if s and (s[0] in alphabet_chars or s[0] == '_'): 
+        return True
+    return False
+
+
+def is_valid_var_name(s: str) -> bool:
+    """
+    :param s: Candidate input variable name
+    :return: True if the variable name starts with a character,
+    and contains only characters and digits. Returns False otherwise.
+    """
+    if s[0] not in alphabet_chars:
+        return False
+    else:
+        if len(s) == 0:
+            #print(s)
+            return True
+    for char in s:
+        if char not in var_chars:
+            return False
+
+    return True
+
+
+def var(s): ## Start from first char, end at last char which a valid var name would end at.
+    firstNonVar = 0
+    for x in range(len(s)):
+        if s[x] in funky_chars:
+            firstNonVar = x
+    while not is_valid_var_name(s[:firstNonVar]):
+        firstNonVar -= 1
+        if firstNonVar <= 0:
+            return False
+        if is_valid_var_name(s[:firstNonVar]):
+            return firstNonVar
+
+    return False
+
+    
+def l_expr(s): # <lambda_expr>::= '\' <var> '.' <expr> | '\' <var> <paren_expr> 
+    print("<l_expr>: \t" + s)
+    for x in range(len(s)):
+        if s[x] == "\\": ## finding '\'
+            endOfVar = var(s[x+1:len(s)]) + x + 1 ## finding <var> 
+            if endOfVar != False:
+                currentVar = s[x+1:x+endOfVar]
+                return "\\" + currentVar + expr(s[x+endOfVar+1:]) ## recursing to <expr>
+                
+            else: 
+                print("Couldn't find variable in lambda expression statement ")
+                return False
+        elif s[x] == " ":
+            continue
+        else:
+            print("Expected '\\', got" + s[x]) ## at position x
+            return False    
+    
+def findLastParen(s):
+    id = s.rfind(")")
+    if id == -1:
+        print("Cant find parentehsis")
+        return False
+    else:
+        return id
+
+def findFirstNonSpace(s):
+    for i, char in enumerate(s):
+        if char != ' ':
+            return i
+    return 0
+
+def p_expr(s):
+    firstNonSpaceIndex = findFirstNonSpace(s)
+    print("<p_expr>: \t" + s[firstNonSpaceIndex:])
+    lastParen = findLastParen(s)
+    for x in range(firstNonSpaceIndex,len(s)):
+        if s[x] == ".":
+            print("Period at position:", x)
+            return "." + expr(s[x+1:])
+        elif s[x] == "(" and lastParen != False:
+            return "(" + expr(s[x+1:lastParen]) + ")"
+    print("<p_expr> is returning nothing! input: ", s)    
+    return "" ## need to handle this
+
+def expr(s):
+    print("<expr>: \t" + s)
+    for x in range(len(s)):
+        if s[x] == "\\":
+            return l_expr(s[x:])
+        elif s[x] == "(" or s[x] == ".":
+            lastp = findLastParen(s) + 1
+            return p_expr(s[x:lastp])
+        elif s[x] == " ":
+            continue
+        else:
+            return s
+        
+    return ""
+
 
 
 def parse_tokens(s_: str, association_type: Optional[str] = None) -> Union[List[str], bool]:
@@ -106,6 +216,7 @@ def parse_tokens(s_: str, association_type: Optional[str] = None) -> Union[List[
     closedP = 0
     abstractionCount = 0
     lambdaFlag = 0
+    nonvarflag = 0
     postLambdaFlag = 0
     proto_token = ""
     s = s_[:]  #  Don't modify the original input string
@@ -113,25 +224,36 @@ def parse_tokens(s_: str, association_type: Optional[str] = None) -> Union[List[
     pre_tokens = s.split(" ")## MAYBE DO RECURSIVELY, KEEP PASSING SMALLER AND SMALLER STRINGS AND APPEND THEM TO LIST
     print(pre_tokens)
     for pre_token in pre_tokens: ## BREAK APART THE TOKENS WHEN THERE ARE THINGS STUCK TO THE VARIABLES WITHOUT WHITESPACE
+        nonvarflag = 0
         for x in range(len(pre_token)):
             char_token = pre_token[x]
             if char_token == "(": ## Parentheses Case 1
                 post_tokens.append(char_token)
+                nonvarflag += 1
             elif char_token == ")": ## Parentheses Case 2
                 post_tokens.append(char_token)
+                nonvarflag += 1
             elif char_token == "\\": ## Lambda Case
                 post_tokens.append(char_token) 
                 lambdaFlag += 1
-            elif char_token in var_chars: ## Variable Case
-                proto_token += char_token
+                nonvarflag += 1
             elif char_token == ".":
                 post_tokens.append("(")
                 abstractionCount += 1
+                nonvarflag += 1
+            elif x == len(pre_token) - 1:
+                print(nonvarflag)
+                if pre_token[nonvarflag:len(pre_token)] != '':
+                    post_tokens.append(pre_token[nonvarflag:len(pre_token)]) ## Var Case
+                elif pre_token[nonvarflag:len(pre_token)] == '' and pre_token[nonvarflag] != '':
+                    post_tokens.append(pre_token[nonvarflag])
+            
 
-        if proto_token != "" and lambdaFlag > 0:
-            post_tokens.append(proto_token)
-            proto_token = ""
-            lambdaFlag -= 1
+
+            if proto_token != "" and lambdaFlag > 0:
+                post_tokens.append(proto_token)
+                proto_token = ""
+                lambdaFlag -= 1
         else:
             print(proto_token)
             # post_tokens = False
@@ -154,7 +276,7 @@ def parse_tokens(s_: str, association_type: Optional[str] = None) -> Union[List[
         print("Good Parentheses! ")
             
 
-    print("_____________________EndLine___________________________")
+    ##print("_____________________EndLine___________________________")
     # TODO
 
     return post_tokens
@@ -170,14 +292,14 @@ def read_lines_from_txt_check_validity(fp: [str, os.PathLike]) -> None: # type: 
     """
     lines = read_lines_from_txt(fp)
     valid_lines = []
-    #print(parse_tokens(lines[0]))
-    for l in lines:
-        tokens = parse_tokens(l)
-        if tokens:
-            valid_lines.append(l)
-            print(f"The tokenized string for input string {l} is {'_'.join(tokens)}")
-    if len(valid_lines) == len(lines):
-        print(f"All lines are valid")
+    print(parse_tokens(lines[0]))
+    # for l in lines:
+    #     tokens = parse_tokens(l)
+    #     if tokens:
+    #         valid_lines.append(l)
+    #         print(f"The tokenized string for input string {l} is {'_'.join(tokens)}")
+    # if len(valid_lines) == len(lines):
+    #     print(f"All lines are valid")
 
 
 
@@ -191,6 +313,7 @@ def read_lines_from_txt_output_parse_tree(fp: [str, os.PathLike]) -> None: # typ
     :param fp: The file path of the lines to parse
     """
     lines = read_lines_from_txt(fp)
+    print(parse_tokens(lines[0]))
     for l in lines:
         tokens = parse_tokens(l)
         if tokens:
@@ -247,24 +370,24 @@ if __name__ == "__main__":
     # valid_lines = []
     # print(parse_tokens("\\ x . a b"))
 
-    # Sample list
-    my_list = ['a', 'b', 'c', 'd', 'e']
+    # # Sample list
+    # my_list = ['a', 'b', 'c', 'd', 'e']
 
-    # Index of the element to be split
-    index_to_split = 2  # splitting 'c'
+    # # Index of the element to be split
+    # index_to_split = 2  # splitting 'c'
 
-    # The two new elements to insert
-    new_element1 = 'x'
-    new_element2 = 'y'
+    # # The two new elements to insert
+    # new_element1 = 'x'
+    # new_element2 = 'y'
 
-    # Perform the split
-    my_list[index_to_split:index_to_split + 1] = [new_element1, new_element2]
+    # # Perform the split
+    # my_list[index_to_split:index_to_split + 1] = [new_element1, new_element2]
 
-    # Print the updated list
-    print(my_list)
+    # # Print the updated list
+    # print(my_list)
 
-    # read_lines_from_txt_check_validity(valid_examples_fp)
-    # read_lines_from_txt_output_parse_tree(valid_examples_fp)
+    read_lines_from_txt_check_validity(valid_examples_fp)
+    #read_lines_from_txt_output_parse_tree(valid_examples_fp)
 
     # print("Checking invalid examples...")
     # read_lines_from_txt_check_validity(invalid_examples_fp)
