@@ -93,58 +93,69 @@ def is_valid_var_name(s: str) -> bool:
     """
     :param s: Candidate input variable name
     :return: True if the variable name starts with a character,
-    and contains only characters and digits. Returns False otherwise.
+    and contains only alphabetic characters and digits. Returns False otherwise.
     """
+    if len(s) == 0:
+        return False  # Empty string is not a valid variable name
 
-
-    if s and (s[0] in alphabet_chars or s[0] == '_'): 
-        return True
-    return False
-
-
-def is_valid_var_name(s: str) -> bool:
-    """
-    :param s: Candidate input variable name
-    :return: True if the variable name starts with a character,
-    and contains only characters and digits. Returns False otherwise.
-    """
-    if s not in alphabet_chars:
+    # First character must be alphabetic (from alphabet_chars)
+    if s[0] not in alphabet_chars:
         return False
-    else:
-        if len(s) == 0:
-            #print(s)
-            return True
-    for char in s:
+
+    # Remaining characters (if any) must be alphanumeric (from var_chars)
+    for char in s[1:]:
         if char not in var_chars:
             return False
 
     return True
 
 
-def var(s): ## Start from first char, end at last char which a valid var name would end at.
-    firstNonVar = 0
+def var_idx(s: str):
+    """
+    Find the index of the last character of a valid variable in the string.
+    :param s: The input string
+    :return: The index of the last character of the valid variable, or -1 if no valid variable is found
+    """
+    last_valid_index = -1
+
+    # Iterate over the string and check each substring as a potential variable
+    for i in range(1, len(s) + 1):
+        # Check if the current prefix is a valid variable name
+        if is_valid_var_name(s[:i]):
+            last_valid_index = i - 1  # Update the last valid index
+        else:
+            break  # Stop once the current prefix is not valid
+    if last_valid_index == -1:
+        last_valid_index = False
+    return last_valid_index
+
+## get var to show as recurring string, catch case of (a (b c))
+def var(s):
+    print("<var>:  \t" + s)
+    if is_valid_var_name(s):
+        return s
     for x in range(len(s)):
-        if s[x] in funky_chars:
-            firstNonVar = x
-    while not is_valid_var_name(s[:firstNonVar]):
-        firstNonVar -= 1
-        if firstNonVar <= 0:
-            return False
-        if is_valid_var_name(s[:firstNonVar]):
-            return firstNonVar
+        if is_valid_var_name(s[:x]):
+            #print("S is valid var: ", s[:x], " len(s):", len(s),x)
+            for y in range(x,len(s) + 1):
+                #print("Theres something happening here...",s[x:y], is_valid_var_name(s[x:y]))
+                if is_valid_var_name(s[0:y-1]) and not is_valid_var_name(s[x:y]):
+                    return s[0:y-1] + "_" +expr(s[y-1:])
+        
 
-    return False
+       
+    return "" # will cause infinite recursion
 
 
-    
 def l_expr(s): # <lambda_expr>::= '\' <var> '.' <expr> | '\' <var> <paren_expr> 
     print("<l_expr>: \t" + s)
     for x in range(len(s)):
         if s[x] == "\\": ## finding '\'
-            endOfVar = var(s[x+1:len(s)]) + x + 1 ## finding <var> 
+            endOfVar = var_idx(s[x+1:len(s)]) + x + 1 ## finding <var> 
             if endOfVar != False:
-                currentVar = s[x+1:x+endOfVar]
-                return "\\" + currentVar + expr(s[x+endOfVar+1:]) ## recursing to <expr>
+                currentVar = s[x+1:x+endOfVar+1]
+                #print("what lambda is seeing as var: " +currentVar)
+                return  "\_" + currentVar + "_" + expr(s[x+endOfVar+1:]) ## recursing to <expr> add \?
                 
             else: 
                 print("Couldn't find variable in lambda expression statement ")
@@ -173,19 +184,14 @@ def p_expr(s):
     firstNonSpaceIndex = findFirstNonSpace(s)
     print("<p_expr>: \t" + s[firstNonSpaceIndex:])
     lastParen = findLastParen(s)
-    if not lastParen:
-        print("Syntax error: expecting ')'")
-        return ""
     for x in range(firstNonSpaceIndex,len(s)):
         if s[x] == ".":
-            print("Period at position:", x)
-            return "." + expr(s[x+1:])
+            #print("Period at position:", x)
+            return "(_" + expr(s[x+1:]) + "_)"
         elif s[x] == "(" and lastParen != False:
-            return "(" + expr(s[x+1:lastParen]) + ")"
+            return "(_" + expr(s[x+1:lastParen]) + "_)"
     print("<p_expr> is returning nothing! input: ", s)    
     return "" ## need to handle this
-
-
 
 def expr(s):
     print("<expr>: \t" + s)
@@ -197,14 +203,13 @@ def expr(s):
             return p_expr(s[x:lastp])
         elif s[x] == " ":
             continue
+        elif s[x] in alphabet_chars:
+            return var(s[x:])
         else:
-            if var(s[x:]) != False:
-                print(s[x:], s[var(s[x:]):])
-                return s[x:var(s[x:])] + expr(s[var(s[x:]):])
-            else: 
-                return s
+            return s
         
     return ""
+
 
 def parse_tokens(s_: str, association_type: Optional[str] = None) -> Union[List[str], bool]:
     return expr(s_)

@@ -29,41 +29,21 @@ def is_valid_var_name(s: str) -> bool:
     """
     :param s: Candidate input variable name
     :return: True if the variable name starts with a character,
-    and contains only characters and digits. Returns False otherwise.
+    and contains only alphabetic characters and digits. Returns False otherwise.
     """
-    if len(s) == 1:
-        if s not in alphabet_chars:
-            #print(len(s))
-            return False
-        else:
-            if len(s) == 0:
-                #print(s)
-                return True
-    for char in s:
+    if len(s) == 0:
+        return False  # Empty string is not a valid variable name
+
+    # First character must be alphabetic (from alphabet_chars)
+    if s[0] not in alphabet_chars:
+        return False
+
+    # Remaining characters (if any) must be alphanumeric (from var_chars)
+    for char in s[1:]:
         if char not in var_chars:
             return False
 
     return True
-
-
-# def var_idx(s): ## Start from first char, end at last char which a valid var name would end at.
-#     firstNonVar = 0
-#     for x in range(len(s)):
-#         if s[x] in funky_chars:
-#             firstNonVar = x
-#     if len(s) <= 1:
-#         return is_valid_var_name(s)
-#     while is_valid_var_name(s[:firstNonVar]) == False:
-#         firstNonVar -= 1
-#         #print(firstNonVar)
-#         if is_valid_var_name(s[firstNonVar]):
-#             return firstNonVar
-#         if firstNonVar <= 0:
-#             return False
-#         if is_valid_var_name(s[:firstNonVar]):
-#             return firstNonVar
-
-#     return False
 
 
 def var_idx(s: str):
@@ -87,13 +67,20 @@ def var_idx(s: str):
 
 ## get var to show as recurring string, catch case of (a (b c))
 def var(s):
-    print("<var>: \t" + s)
+    print("<var>:  \t" + s)
     if is_valid_var_name(s):
         return s
-    elif var_idx(s) != False:
-        return s + var(s[var_idx(s):])
-    else:
-        return s ##expr(s)
+    for x in range(len(s)):
+        if is_valid_var_name(s[:x]):
+            #print("S is valid var: ", s[:x], " len(s):", len(s),x)
+            for y in range(x,len(s) + 1):
+                #print("Theres something happening here...",s[x:y], is_valid_var_name(s[x:y]))
+                if is_valid_var_name(s[0:y-1]) and not is_valid_var_name(s[x:y]):
+                    return s[0:y-1] + "_" +expr(s[y-1:])
+        
+
+       
+    return "" # will cause infinite recursion
 
 
 def l_expr(s): # <lambda_expr>::= '\' <var> '.' <expr> | '\' <var> <paren_expr> 
@@ -102,9 +89,9 @@ def l_expr(s): # <lambda_expr>::= '\' <var> '.' <expr> | '\' <var> <paren_expr>
         if s[x] == "\\": ## finding '\'
             endOfVar = var_idx(s[x+1:len(s)]) + x + 1 ## finding <var> 
             if endOfVar != False:
-                currentVar = s[x+1:x+endOfVar]
-                print("what lambda is seeing as var: " +currentVar)
-                return "\\" + currentVar + expr(s[x+endOfVar+1:]) ## recursing to <expr>
+                currentVar = s[x+1:x+endOfVar+1]
+                #print("what lambda is seeing as var: " +currentVar)
+                return  "\_" + currentVar + "_" + expr(s[x+endOfVar+1:]) ## recursing to <expr> add \?
                 
             else: 
                 print("Couldn't find variable in lambda expression statement ")
@@ -135,10 +122,10 @@ def p_expr(s):
     lastParen = findLastParen(s)
     for x in range(firstNonSpaceIndex,len(s)):
         if s[x] == ".":
-            print("Period at position:", x)
-            return "." + expr(s[x+1:])
+            #print("Period at position:", x)
+            return "(_" + expr(s[x+1:]) + "_)"
         elif s[x] == "(" and lastParen != False:
-            return "(" + expr(s[x+1:lastParen]) + ")"
+            return "(_" + expr(s[x+1:lastParen]) + "_)"
     print("<p_expr> is returning nothing! input: ", s)    
     return "" ## need to handle this
 
@@ -159,7 +146,7 @@ def expr(s):
         
     return ""
 
-s= "\\x (x (b c))"
+s= "\\x. x (b c)"
 s1 = "A B"
 print(expr(s))
 
