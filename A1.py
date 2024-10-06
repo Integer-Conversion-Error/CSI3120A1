@@ -27,17 +27,7 @@ def read_lines_from_txt(fp: [str, os.PathLike]) -> List[str]: # type: ignore
     return lines
 
 
-def is_valid_var_name(s: str) -> bool:
-    """
-    :param s: Candidate input variable name
-    :return: True if the variable name starts with a character,
-    and contains only characters and digits. Returns False otherwise.
-    """
 
-
-    if s and (s[0] in alphabet_chars or s[0] == '_'): ##if s and (s[0].isalpha() or s[0] == '_') and s.isidentifier():
-        return True
-    return False
 
 
 class Node:
@@ -140,7 +130,8 @@ def var(s):
             for y in range(x,len(s) + 1):
                 #print("Theres something happening here...",s[x:y], is_valid_var_name(s[x:y]))
                 if is_valid_var_name(s[0:y-1]) and not is_valid_var_name(s[x:y]):
-                    return s[0:y-1] + "_" +expr(s[y-1:])
+                    
+                    return s[0:y-1] + expr(s[y-1:])
         
 
        
@@ -148,14 +139,15 @@ def var(s):
 
 
 def l_expr(s): # <lambda_expr>::= '\' <var> '.' <expr> | '\' <var> <paren_expr> 
-    print("<l_expr>: \t" + s)
+    firstNonSpaceIndex = findFirstNonSpace(s)
+    print("<l_expr>: \t" + s[firstNonSpaceIndex:])
     for x in range(len(s)):
         if s[x] == "\\": ## finding '\'
             endOfVar = var_idx(s[x+1:len(s)]) + x + 1 ## finding <var> 
             if endOfVar != False:
                 currentVar = s[x+1:x+endOfVar+1]
                 #print("what lambda is seeing as var: " +currentVar)
-                return  "\_" + currentVar + "_" + expr(s[x+endOfVar+1:]) ## recursing to <expr> add \?
+                return  "\\" + currentVar + expr(s[x+endOfVar+1:]) ## recursing to <expr> add \?
                 
             else: 
                 print("Couldn't find variable in lambda expression statement ")
@@ -169,7 +161,7 @@ def l_expr(s): # <lambda_expr>::= '\' <var> '.' <expr> | '\' <var> <paren_expr>
 def findLastParen(s):
     id = s.rfind(")")
     if id == -1:
-        print("Cant find parentehsis")
+        print("Cant find parenthesis in ", s)
         return False
     else:
         return id
@@ -178,23 +170,39 @@ def findFirstNonSpace(s):
     for i, char in enumerate(s):
         if char != ' ':
             return i
-    return 0
+    print('Could\'t find nonspace in string ',s)
+    return False
+
+def handleAbstraction(s):
+    new_s = ""
+    absCount = 0
+    for char in s:
+        if char ==".":
+            new_s += "("
+            absCount += 1
+        else:
+            new_s += char
+    while absCount > 0: 
+        absCount -= 1
+        new_s += ")"
+    return new_s
 
 def p_expr(s):
     firstNonSpaceIndex = findFirstNonSpace(s)
     print("<p_expr>: \t" + s[firstNonSpaceIndex:])
     lastParen = findLastParen(s)
-    for x in range(firstNonSpaceIndex,len(s)):
+    for x in range(len(s)):
         if s[x] == ".":
-            #print("Period at position:", x)
-            return "(_" + expr(s[x+1:]) + "_)"
+            print("Period at position:", x)
+            return "(" + expr(s[x+1:]) + ")"
         elif s[x] == "(" and lastParen != False:
-            return "(_" + expr(s[x+1:lastParen]) + "_)"
+            return "(" + expr(s[x+1:lastParen]) + ")"
     print("<p_expr> is returning nothing! input: ", s)    
     return "" ## need to handle this
 
 def expr(s):
-    print("<expr>: \t" + s)
+    #firstNonSpaceIndex = findFirstNonSpace(s)
+    #print("<expr>: \t" + s[firstNonSpaceIndex:])
     for x in range(len(s)):
         if s[x] == "\\":
             return l_expr(s[x:])
@@ -212,9 +220,6 @@ def expr(s):
 
 
 def parse_tokens(s_: str, association_type: Optional[str] = None) -> Union[List[str], bool]:
-    return expr(s_)
-
-def deprct_parse_tokens(s_: str, association_type: Optional[str] = None) -> Union[List[str], bool]:
     """
     Gets the final tokens for valid strings as a list of strings, only for valid syntax,
     where tokens are (no whitespace included)
@@ -227,75 +232,10 @@ def deprct_parse_tokens(s_: str, association_type: Optional[str] = None) -> Unio
     :param association_type: If not None, add brackets to make expressions non-ambiguous
     :return: A List of tokens (strings) if a valid input, otherwise False
     """
-    ##is_valid_var_name(s: str) 
-    openP = 0
-    closedP = 0
-    abstractionCount = 0
-    lambdaFlag = 0
-    nonvarflag = 0
-    postLambdaFlag = 0
-    proto_token = ""
-    s = s_[:]  #  Don't modify the original input string
-    post_tokens = []
-    pre_tokens = s.split(" ")## MAYBE DO RECURSIVELY, KEEP PASSING SMALLER AND SMALLER STRINGS AND APPEND THEM TO LIST
-    print(pre_tokens)
-    for pre_token in pre_tokens: ## BREAK APART THE TOKENS WHEN THERE ARE THINGS STUCK TO THE VARIABLES WITHOUT WHITESPACE
-        nonvarflag = 0
-        for x in range(len(pre_token)):
-            char_token = pre_token[x]
-            if char_token == "(": ## Parentheses Case 1
-                post_tokens.append(char_token)
-                nonvarflag += 1
-            elif char_token == ")": ## Parentheses Case 2
-                post_tokens.append(char_token)
-                nonvarflag += 1
-            elif char_token == "\\": ## Lambda Case
-                post_tokens.append(char_token) 
-                lambdaFlag += 1
-                nonvarflag += 1
-            elif char_token == ".":
-                post_tokens.append("(")
-                abstractionCount += 1
-                nonvarflag += 1
-            elif x == len(pre_token) - 1:
-                print(nonvarflag)
-                if pre_token[nonvarflag:len(pre_token)] != '':
-                    post_tokens.append(pre_token[nonvarflag:len(pre_token)]) ## Var Case
-                elif pre_token[nonvarflag:len(pre_token)] == '' and pre_token[nonvarflag] != '':
-                    post_tokens.append(pre_token[nonvarflag])
-            
+    s = handleAbstraction(s_)
+    print("Pre-Parsing (and pre-abstraction): ",s_)
+    return expr(s)
 
-
-            if proto_token != "" and lambdaFlag > 0:
-                post_tokens.append(proto_token)
-                proto_token = ""
-                lambdaFlag -= 1
-        else:
-            print(proto_token)
-            # post_tokens = False
-            # return post_tokens
-    
-    for x in range(abstractionCount):
-        post_tokens.append(")")
-    
-    for token in post_tokens: 
-        print(token)
-        if  "(" == token:
-            openP += 1
-        if ")" == token:
-            closedP += 1
-    print(post_tokens)
-    if closedP != openP:
-        print("Parentheses Error! ")
-        # post_tokens = False
-    else: 
-        print("Good Parentheses! ")
-            
-
-    ##print("_____________________EndLine___________________________")
-    # TODO
-
-    return post_tokens
 
 
 def read_lines_from_txt_check_validity(fp: [str, os.PathLike]) -> None: # type: ignore
@@ -308,14 +248,14 @@ def read_lines_from_txt_check_validity(fp: [str, os.PathLike]) -> None: # type: 
     """
     lines = read_lines_from_txt(fp)
     valid_lines = []
-    print(parse_tokens(lines[0]))
-    # for l in lines:
-    #     tokens = parse_tokens(l)
-    #     if tokens:
-    #         valid_lines.append(l)
-    #         print(f"The tokenized string for input string {l} is {'_'.join(tokens)}")
-    # if len(valid_lines) == len(lines):
-    #     print(f"All lines are valid")
+    #print(parse_tokens(lines[0]))
+    for l in lines:
+        tokens = parse_tokens(l)
+        if tokens:
+            valid_lines.append(l)
+            print(f"The tokenized string for input string {l} is {'_'.join(tokens)}")
+    if len(valid_lines) == len(lines):
+        print(f"All lines are valid")
 
 
 

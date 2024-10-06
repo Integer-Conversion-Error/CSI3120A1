@@ -12,17 +12,6 @@ valid_examples_fp = "./valid_examples.txt"
 invalid_examples_fp = "./invalid_examples.txt"
 
 
-# def is_valid_var_name(s: str) -> bool:
-#     """
-#     :param s: Candidate input variable name
-#     :return: True if the variable name starts with a character,
-#     and contains only characters and digits. Returns False otherwise.
-#     """
-
-
-#     if s and (s[0] in alphabet_chars or s[0] == '_'): 
-#         return True
-#     return False
 
 
 def is_valid_var_name(s: str) -> bool:
@@ -69,14 +58,16 @@ def var_idx(s: str):
 def var(s):
     print("<var>:  \t" + s)
     if is_valid_var_name(s):
+        print(s)
         return s
     for x in range(len(s)):
         if is_valid_var_name(s[:x]):
-            #print("S is valid var: ", s[:x], " len(s):", len(s),x)
+            print("S is valid var: ", s[:x], " len(s):", len(s),x)
             for y in range(x,len(s) + 1):
                 #print("Theres something happening here...",s[x:y], is_valid_var_name(s[x:y]))
                 if is_valid_var_name(s[0:y-1]) and not is_valid_var_name(s[x:y]):
-                    return s[0:y-1] + "_" +expr(s[y-1:])
+                    print(s[0:y-1], s[y-1:])
+                    return s[0:y-1] + " "+ expr(s[y-1:])
         
 
        
@@ -84,14 +75,15 @@ def var(s):
 
 
 def l_expr(s): # <lambda_expr>::= '\' <var> '.' <expr> | '\' <var> <paren_expr> 
-    print("<l_expr>: \t" + s)
+    firstNonSpaceIndex = findFirstNonSpace(s)
+    print("<l_expr>: \t" + s[firstNonSpaceIndex:])
     for x in range(len(s)):
         if s[x] == "\\": ## finding '\'
             endOfVar = var_idx(s[x+1:len(s)]) + x + 1 ## finding <var> 
             if endOfVar != False:
                 currentVar = s[x+1:x+endOfVar+1]
                 #print("what lambda is seeing as var: " +currentVar)
-                return  "\_" + currentVar + "_" + expr(s[x+endOfVar+1:]) ## recursing to <expr> add \?
+                return  "\\" + currentVar + expr(s[x+endOfVar+1:]) ## recursing to <expr> add \?
                 
             else: 
                 print("Couldn't find variable in lambda expression statement ")
@@ -105,7 +97,7 @@ def l_expr(s): # <lambda_expr>::= '\' <var> '.' <expr> | '\' <var> <paren_expr>
 def findLastParen(s):
     id = s.rfind(")")
     if id == -1:
-        print("Cant find parentehsis")
+        print("Cant find parenthesis in ", s)
         return False
     else:
         return id
@@ -114,23 +106,39 @@ def findFirstNonSpace(s):
     for i, char in enumerate(s):
         if char != ' ':
             return i
-    return 0
+    print('Could\'t find nonspace in string ',s)
+    return False
+
+def handleAbstraction(s):
+    new_s = ""
+    absCount = 0
+    for char in s:
+        if char ==".":
+            new_s += "("
+            absCount += 1
+        else:
+            new_s += char
+    while absCount > 0: 
+        absCount -= 1
+        new_s += ")"
+    return new_s
 
 def p_expr(s):
     firstNonSpaceIndex = findFirstNonSpace(s)
     print("<p_expr>: \t" + s[firstNonSpaceIndex:])
     lastParen = findLastParen(s)
-    for x in range(firstNonSpaceIndex,len(s)):
+    for x in range(len(s)):
         if s[x] == ".":
-            #print("Period at position:", x)
-            return "(_" + expr(s[x+1:]) + "_)"
+            print("Period at position:", x)
+            return "(" + expr(s[x+1:]) + ")"
         elif s[x] == "(" and lastParen != False:
-            return "(_" + expr(s[x+1:lastParen]) + "_)"
+            return "(" + expr(s[x+1:lastParen]) + ")"
     print("<p_expr> is returning nothing! input: ", s)    
     return "" ## need to handle this
 
 def expr(s):
-    print("<expr>: \t" + s)
+    firstNonSpaceIndex = findFirstNonSpace(s)
+    #print("<expr>: \t" + s[firstNonSpaceIndex:])
     for x in range(len(s)):
         if s[x] == "\\":
             return l_expr(s[x:])
@@ -146,7 +154,15 @@ def expr(s):
         
     return ""
 
-s= "\\x. x (b c)"
+
+def parse_tokens(s_: str, association_type: Optional[str] = None) -> Union[List[str], bool]:
+    s = handleAbstraction(s_)
+    print("Pre-Parsing (and pre-abstraction): ",s_)
+    return expr(s)
+
+
+
+s= "bcd"
 s1 = "A B"
-print(expr(s))
+print(parse_tokens(s))
 
