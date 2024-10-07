@@ -275,22 +275,19 @@ def p_expr(s): ##  NEEDS FIXING, CATCH CASE OF PARANTHESES WITH NOTHING IN IT LI
     #print("<p_expr>: \t" + s[firstNonSpaceIndex:])
     lastParen = findFirstParen(s)
     for x in range(len(s)):
-        # if s[x] == "."  and not is_leaf(s[x+1:]):
-        #     print("Period at position:", x)
-        #     return "(_" + expr(s[x+1:]) + "_)" ## true
         if lastParen == False:
             print('Missing end bracket')
             return "P_False"
         if s[x] == "(" and lastParen != False :
             if is_leaf(s[x+1:lastParen]):
-                return "(_" + var(s[x+1:lastParen]) + "_)"+ expr(s[lastParen + 1:]) ## true lastParen + 1
+                return "(_" + var(s[x+1:lastParen]) + "_)"+ expr(s[lastParen + 1:]) ## 
             elif expr(s[x+1:lastParen]) != "":
-                return "(_" + expr(s[x+1:lastParen]) + "_)" + expr(s[lastParen+1:]) ## lastParen +1
+                return "(_" + expr(s[x+1:lastParen]) + "_)" + expr(s[lastParen+1:]) ## 
             elif expr(s[x+1:lastParen]) == "":
                 print('Expected expression in parantheses at', x+1)
                 return "P_False"
-    print("<p_expr> is returning nothing! input: ", s)   #Expected ")" at (some index) 
-    return "P_False" ## need to handle this
+    print("<p_expr> is returning nothing! input: ", s)  
+    return "P_False" ## need to handle this ?
 
 def bool_p_expr(s):
     firstNonSpaceIndex = findFirstNonSpace(s)
