@@ -278,11 +278,17 @@ def p_expr(s): ##  NEEDS FIXING, CATCH CASE OF PARANTHESES WITH NOTHING IN IT LI
         # if s[x] == "."  and not is_leaf(s[x+1:]):
         #     print("Period at position:", x)
         #     return "(_" + expr(s[x+1:]) + "_)" ## true
+        if lastParen == False:
+            print('Missing end bracket')
+            return "P_False"
         if s[x] == "(" and lastParen != False :
             if is_leaf(s[x+1:lastParen]):
                 return "(_" + var(s[x+1:lastParen]) + "_)"+ expr(s[lastParen + 1:]) ## true lastParen + 1
             elif expr(s[x+1:lastParen]) != "":
                 return "(_" + expr(s[x+1:lastParen]) + "_)" + expr(s[lastParen+1:]) ## lastParen +1
+            elif expr(s[x+1:lastParen]) == "":
+                print('Expected expression in parantheses at', x+1)
+                return "P_False"
     print("<p_expr> is returning nothing! input: ", s)   #Expected ")" at (some index) 
     return "P_False" ## need to handle this
 
@@ -487,7 +493,7 @@ if __name__ == "__main__":
     # # Print the updated list
     # print(my_list)
 
-    read_lines_from_txt_check_validity(invalid_examples_fp)
+    read_lines_from_txt_check_validity(valid_examples_fp)
     #read_lines_from_txt_output_parse_tree(valid_examples_fp)
 
     # print("Checking invalid examples...")
