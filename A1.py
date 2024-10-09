@@ -1,7 +1,7 @@
 import os
 from typing import Union, List, Optional
 
-from sklearn import tree
+#from sklearn import tree
 
 
 
@@ -392,6 +392,29 @@ def add_associativity(s_: List[str], association_type: str = "left") -> List[str
     s = s_[:]  # Don't modify original string
     return []
 
+
+# This function finds the most outer bracket for a string list
+def findMostOuterBracket(inputString: List[str]) -> int:
+    # If list input does not start with a ")"
+    if inputString[0] != "(":
+        return -1
+    else:
+        # Use a stack to keep track of the brackets
+        trackingStack = []
+        i = 0
+        # Traversing through list to find index of the most outer bracket
+        while i < len(inputString):
+            if inputString[i] == "(":
+                trackingStack.append("(")
+                i = i + 1
+            elif inputString[i] == ")" and len(trackingStack) > 1:
+                trackingStack.pop(len(inputString) - 1)
+                i = i + 1
+            else:
+                return i
+
+
+# Note: Try removing while loop and only use if-else statements
 def build_parse_tree_rec(tokens: List[str], node: Optional[Node] = None) -> Node:
     """
     An inner recursive inner function to build a parse tree
@@ -399,29 +422,43 @@ def build_parse_tree_rec(tokens: List[str], node: Optional[Node] = None) -> Node
     :param node: A Node object
     :return: a node with children whose tokens are variables, parenthesis, slashes, or the inner part of an expression
     """
-    firstParen = 0
-    while tokens:
-        if not node: ## start case
-            return build_parse_tree_rec(tokens,Node(tokens))
-        elif len(tokens[0]) == 1 and tokens[0] in avc: ## single char variable & lambda
-            node.add_child_node(Node(tokens[0]))
-            return build_parse_tree_rec(tokens[1:],node)
-        elif len(tokens[0]) > 1:                            # multi char variable
-            node.add_child_node(Node(tokens[0]))
-            return build_parse_tree_rec(tokens[1:],node)
-        elif tokens[0] == "(":
-            subnode = Node(tokens[1:-1]) ## handle end of parantheses, THIS WOULD* GOES ON FOREVER
-            node.add_child_node(Node(tokens[0]))
-            node.add_child_node(subnode)
-            node.add_child_node(build_parse_tree_rec(tokens, subnode))
-            return build_parse_tree_rec(tokens[firstParen], node)
-        else:
-            print(tokens)
-        # elif tokens[0] in ["\\", "("]:                      ## INCREASE LEVEL
-        #     node.add_child_node(Node(tokens))
-        #     return build_parse_tree_rec(tokens[1:], node)
-    #TODO
+    
+    if(len(tokens) == 0):
+        return Node(["This list is empty"])
 
+    # If there is no root node
+    if not node:
+        node = Node(tokens)
+        #node.add_child_node(build_parse_tree_rec(tokens,node))
+        
+    # If the token is a variable name or a lambda sign
+    if len(tokens[0]) == 1 and tokens[0] in avc: 
+        node = Node(tokens[0])
+        node.add_child_node(build_parse_tree_rec(tokens[1:],node))
+        
+        # If the token is a variable with a length > then 1
+    elif len(tokens[0]) > 1:                           
+        node = Node(tokens[0])
+        node.add_child_node(build_parse_tree_rec(tokens[1:],node))
+        
+    # If the token is a opening bracket
+    elif tokens[0] == "(":
+        closingBracketIndex = findMostOuterBracket(tokens)
+        # Test case(Leave out of final code**)
+        if closingBracketIndex == -1:
+            print("Issue with list input when recurrsivlty making parse tree")
+            print(tokens)
+        else:
+            subnode = Node(tokens[1:closingBracketIndex - 1])
+            node.add_child_node(Node(tokens[0]))
+            #node.add_child_node(subnode)                 
+            node.add_child_node(build_parse_tree_rec(tokens[1: closingBracketIndex - 1], subnode))
+            node.add_child_node(build_parse_tree_rec(tokens[closingBracketIndex + 1:], node))
+    elif tokens[0] == ")":
+        return node
+    else:
+        print(tokens)
+        
     return node
 
 def build_parse_tree(tokens: List[str]) -> ParseTree:
@@ -436,9 +473,13 @@ def build_parse_tree(tokens: List[str]) -> ParseTree:
 
 if __name__ == "__main__":
 
-    print("\n\nChecking valid examples...")
-    read_lines_from_txt_check_validity(valid_examples_fp)
-    read_lines_from_txt_output_parse_tree(valid_examples_fp)
+    string = "\_x_(_\_y_(_x_y_)_)"
+    newLst = string.rsplit("_")
+    build_parse_tree(newLst)
 
-    print("Checking invalid examples...")
-    read_lines_from_txt_check_validity(invalid_examples_fp)
+    #print("\n\nChecking valid examples...")
+    #read_lines_from_txt_check_validity(valid_examples_fp)
+    #read_lines_from_txt_output_parse_tree(valid_examples_fp)
+
+    #print("Checking invalid examples...")
+    #read_lines_from_txt_check_validity(invalid_examples_fp)
