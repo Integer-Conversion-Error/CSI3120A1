@@ -411,7 +411,7 @@ def build_parse_tree_rec(tokens: List[str], node: Optional[Node] = None) -> Node
             node.add_child_node(Node(tokens[0]))
             return build_parse_tree_rec(tokens[1:],node)
         elif tokens[0] == "(":
-            subnode = Node(tokens) ## handle end of parantheses
+            subnode = Node(tokens) ## handle end of parantheses, THIS GOES ON FOREVER
             node.add_child_node(Node(tokens[0]))
             node.add_child_node(subnode)
             return node.add_child_node(build_parse_tree_rec(tokens, subnode))
