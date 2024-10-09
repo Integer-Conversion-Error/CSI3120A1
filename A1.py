@@ -119,10 +119,10 @@ def is_valid_var_name(s: str) -> bool:
     contains only alphabetic characters and digits, and has no spaces.
     Returns False otherwise.
     """
-    if len(s) == 0:
+    if len(s) == 0: #empty string
         return False  
 
-    if s[0] not in alphabet_chars:
+    if s[0] not in alphabet_chars: # nonalpha first char
         return False
 
     for char in s[1:]:
@@ -175,7 +175,7 @@ def bool_var(s):
                     return True
     return False 
 
-def l_expr(s): # <lambda_expr>::= '\' <var> '.' <expr> | '\' <var> <paren_expr> 
+def l_expr(s): # <lambda_expr>::= '\' <var> '.' <expr> | '\' <var> <paren_expr> | '\' <var> <expr>
     global errorMsg
     for x in range(len(s)):
         if s[x] == "\\": ## finding '\'
@@ -220,21 +220,20 @@ def bool_l_expr(s): # <lambda_expr>::= '\' <var> '.' <expr> | '\' <var> <paren_e
         else:
             return False    
     
-def p_expr(s): ##  NEEDS FIXING, CATCH CASE OF PARANTHESES WITH NOTHING IN IT LIKE I DID IN L_EXPR
-    firstNonSpaceIndex = findFirstNonSpace(s)
+def p_expr(s): 
     global errorMsg
-    lastParen = findFirstParen(s)
+    firstParen = findFirstParen(s) ## means we have left association
     for x in range(len(s)):
-        if lastParen == False:
+        if firstParen == False:
             ermesg = 'Missing end bracket' #at position ' + str(len(s))
             errorMsg.append(ermesg)
             return ""
-        if s[x] == "(" and lastParen != False :
-            if is_leaf(s[x+1:lastParen]):
-                return "(_" + var(s[x+1:lastParen]) + "_)"+ expr(s[lastParen + 1:]) ## 
-            elif expr(s[x+1:lastParen]) != "":
-                return "(_" + expr(s[x+1:lastParen]) + "_)" + expr(s[lastParen+1:]) ## 
-            elif expr(s[x+1:lastParen]) == "":
+        if s[x] == "(" and firstParen != False :
+            if is_leaf(s[x+1:firstParen]):
+                return "(_" + var(s[x+1:firstParen]) + "_)" + expr(s[firstParen + 1:]) ## (a)(b)(c)(d)
+            elif expr(s[x+1:firstParen]) != "":
+                return "(_" + expr(s[x+1:firstParen]) + "_)" + expr(s[firstParen+1:]) ## (a (b)) (bcd)
+            elif expr(s[x+1:firstParen]) == "":
                 ermesg = 'Expected expression in parantheses' #at ' + str(x+1)
                 errorMsg.append(ermesg)
                 return ""
@@ -243,11 +242,10 @@ def p_expr(s): ##  NEEDS FIXING, CATCH CASE OF PARANTHESES WITH NOTHING IN IT LI
     return "" ## need to handle this ?
 
 def bool_p_expr(s):
-    firstNonSpaceIndex = findFirstNonSpace(s)
     #print("<bool_p_expr>: \t" + s[firstNonSpaceIndex:])
     lastParen = findLastParen(s)
-    if s == "()": ##MIGHT BREAK GOOD CASES
-        return False  ##MIGHT BREAK GOOD CASES
+    if s == "()": 
+        return False 
     for x in range(len(s)):
         if s[x] == ".":
             return True ## true
@@ -335,8 +333,8 @@ def parse_tokens(s_: str, association_type: Optional[str] = None) -> Union[List[
     r_despaced = r_despaced.replace(" ","")
     if s_despaced != r_despaced:
         tokenArr = False
-        print("\nERROR - PARSE MISMATCH: ",s,s_despaced,r_despaced)
-        print(errorMsg, "\n")
+        print("\nERROR - PARSE MISMATCH: ",s,s_despaced,r_despaced) ## comment this out!
+        print(errorMsg, "\n") ## make into for loop to print individual error msgs
     
     elif recurring_stuff != "":
         tokenArr = recurring_stuff.split("_") 
@@ -401,6 +399,7 @@ def build_parse_tree_rec(tokens: List[str], node: Optional[Node] = None) -> Node
     :param node: A Node object
     :return: a node with children whose tokens are variables, parenthesis, slashes, or the inner part of an expression
     """
+    firstParen = 0
     while tokens:
         if not node: ## start case
             return build_parse_tree_rec(tokens,Node(tokens))
@@ -411,10 +410,11 @@ def build_parse_tree_rec(tokens: List[str], node: Optional[Node] = None) -> Node
             node.add_child_node(Node(tokens[0]))
             return build_parse_tree_rec(tokens[1:],node)
         elif tokens[0] == "(":
-            subnode = Node(tokens) ## handle end of parantheses, THIS GOES ON FOREVER
+            subnode = Node(tokens[1:-1]) ## handle end of parantheses, THIS WOULD* GOES ON FOREVER
             node.add_child_node(Node(tokens[0]))
             node.add_child_node(subnode)
-            return node.add_child_node(build_parse_tree_rec(tokens, subnode))
+            node.add_child_node(build_parse_tree_rec(tokens, subnode))
+            return build_parse_tree_rec(tokens[firstParen], node)
         else:
             print(tokens)
         # elif tokens[0] in ["\\", "("]:                      ## INCREASE LEVEL
