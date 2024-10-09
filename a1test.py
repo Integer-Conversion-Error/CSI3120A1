@@ -64,14 +64,55 @@ class ParseTree:
 
     def print_tree(self, node: Optional[Node] = None, level: int = 0) -> None:
         if node is None:
-            node = self.root  # Start from the root if no node is passed
+            node = self.root  
 
-        # Print the node's elem at the current level, indented based on the level
         print("\t" * level + str(node.elem))
 
-        # Recursively print all child nodes, increasing the level for indentation
         for child in node.children:
             self.print_tree(child, level + 1)
+
+
+def findLastParen(s):
+    id = s.rfind(")")
+    if id == -1:
+        return False
+    else:
+        return id
+    
+def findFirstParen(s):
+    x = 0
+    opening = 0
+    while x < len(s):
+        if s[x] == "(":
+            opening += 1
+        if s[x] == ")" and opening > 1:
+            opening -= 1
+        elif s[x] == ")":
+            return x
+        x += 1
+
+    return False
+
+def findFirstNonSpace(s):
+    for i, char in enumerate(s):
+        if char != ' ':
+            return i
+    return False
+
+def handleAbstraction(s):
+    new_s = ""
+    absCount = 0
+    for char in s:
+        if char ==".":
+            new_s += "(" 
+            absCount += 1
+        else:
+            new_s += char
+    while absCount > 0: 
+        absCount -= 1
+        new_s += ")"
+    new_s = new_s.replace("( ", "(")
+    return new_s
 
 
 def is_valid_var_name(s: str) -> bool:
@@ -82,13 +123,11 @@ def is_valid_var_name(s: str) -> bool:
     Returns False otherwise.
     """
     if len(s) == 0:
-        return False  # Empty string is not a valid variable name
+        return False  
 
-    # First character must be alphabetic (from alphabet_chars)
     if s[0] not in alphabet_chars:
         return False
 
-    # Remaining characters (if any) must be alphanumeric (from var_chars) and not contain spaces
     for char in s[1:]:
         if char not in var_chars or char == ' ':
             return False
@@ -104,15 +143,17 @@ def var_idx(s: str):
     """
     last_valid_index = -1
 
-    # Iterate over the string and check each substring as a potential variable
     for i in range(1, len(s) + 1):
-        # Check if the current prefix is a valid variable name
-        if is_valid_var_name(s[:i]) or s[i] == " ":
-            #print(s[:i])
-            last_valid_index = i - 1  # Update the last valid index
-        
-        else:
-            break  # Stop once the current prefix is not valid
+        try:
+            if is_valid_var_name(s[:i]) or s[i] == " ":
+                #print(s[:i])
+                last_valid_index = i - 1  
+            
+            else:
+                break  # Stop once the current prefix is not valid
+        except IndexError:
+            print("No var index found! ")
+            break
     if last_valid_index == -1:
         last_valid_index = False
     #print(s[last_valid_index])
@@ -120,11 +161,13 @@ def var_idx(s: str):
 
 ## get var to show as recurring string, catch case of (a (b c))
 def var(s):
-    #print("<var>:  \t" + s)
+    
+    firstNonSpaceIndex = findFirstNonSpace(s)
+    #print("<var>:  \t" + s[firstNonSpaceIndex:])
     if is_valid_var_name(s):
         #print("Valid full string:" + s)
         return s
-    for x in range(len(s)):
+    for x in range(firstNonSpaceIndex,len(s)):
         if is_valid_var_name(s[:x]):
             #print("S is valid var: ", s[:x], " len(s):", len(s),x)
             for y in range(x,len(s) + 1):
@@ -132,6 +175,9 @@ def var(s):
                 if is_valid_var_name(s[:y-1]) and not is_valid_var_name(s[x:y]):
                     #print(s[:y-1], s[y-1:])
                     return s[:y-1] + "_"+ expr(s[y-1:])
+        #elif is_valid_var_name(s):
+            
+        #print(s[:x])
     return s # will cause infinite recursion
 
 def bool_var(s):
@@ -156,22 +202,21 @@ def l_expr(s): # <lambda_expr>::= '\' <var> '.' <expr> | '\' <var> <paren_expr>
             #print("Checking this for leafness:",s[x+endOfVar:])
             if endOfVar != False : ##  (bool_l_expr(s[x+1:]) or bool_p_expr(s[x+1:])) or something like this : and not is_leaf(s[x+endOfVar+1:])
                 currentVar = s[x+1:x+endOfVar+1]
-                #print("what lambda is seeing as var: " +currentVar)
-
-                if bool_var(currentVar):
+                if bool_var(currentVar) and expr(s[x+endOfVar+1:]) != "":
                     return  "\_" + currentVar +"_"+expr(s[x+endOfVar+1:]) ## recursing to <expr> add \?
-                else:
-                    #print("lamda seeing something bad")
+                elif not bool_var(currentVar):
+                    print("Expected variable in lambda expression at position",x + 1,", Recieved:", currentVar )
                     return "False"
-            #elif endOfVar != False and is_leaf(s[x+endOfVar+1:]):
-                
+                elif not expr(s[x+endOfVar+1:]) != "":
+                    print("Missing expression in lambda expression at position",x + 1 )
+                    return "False"                
             else: 
-                #print("Couldn't find variable in lambda expression statement ")
+                print("Couldn't find variable in lambda expression statement ")
                 return "L_False"
         elif s[x] == " ":
             continue
         else:
-            #print("Expected '\\', got" + s[x]) ## at position x
+            print("Expected '\\', got" + s[x]) ## at position x
             return "L_False"    
         
 def bool_l_expr(s): # <lambda_expr>::= '\' <var> '.' <expr> | '\' <var> <paren_expr> 
@@ -185,7 +230,7 @@ def bool_l_expr(s): # <lambda_expr>::= '\' <var> '.' <expr> | '\' <var> <paren_e
                 if bool_var(currentVar):
                     return True
                 else:
-                    #print("lamda seeing something bad")
+                    print("Expected variable in lambda expression at position",x + 1,", Recieved:", currentVar )
                     return False
             else: 
                 print("Couldn't find variable in lambda expression statement ")
@@ -193,69 +238,28 @@ def bool_l_expr(s): # <lambda_expr>::= '\' <var> '.' <expr> | '\' <var> <paren_e
         elif s[x] == " ":
             continue
         else:
-            #print("Expected '\\', got " + s[x]) ## at position x
+            print("Expected '\\', got " + s[x]) 
             return False    
     
-def findLastParen(s):
-    id = s.rfind(")")
-    if id == -1:
-        #print("Cant find parenthesis in ", s)
-        return False
-    else:
-        return id
-    
-def findFirstParen(s):
-    x = 0
-    opening = 0
-    while x < len(s):
-        if s[x] == "(":
-            opening += 1
-        if s[x] == ")" and opening > 1:
-            #print(s[x], opening)
-            opening -= 1
-        elif s[x] == ")":
-            return x
-        x += 1
 
-    return False
-
-def findFirstNonSpace(s):
-    for i, char in enumerate(s):
-        if char != ' ':
-            return i
-    #print('Could\'t find nonspace in string ',s)
-    return False
-
-def handleAbstraction(s):
-    new_s = ""
-    absCount = 0
-    for char in s:
-        if char ==".":
-            new_s += "("
-            absCount += 1
-        else:
-            new_s += char
-    while absCount > 0: 
-        absCount -= 1
-        new_s += ")"
-    return new_s
-
-
-def p_expr(s):
+def p_expr(s): ##  NEEDS FIXING, CATCH CASE OF PARANTHESES WITH NOTHING IN IT LIKE I DID IN L_EXPR
     firstNonSpaceIndex = findFirstNonSpace(s)
     #print("<p_expr>: \t" + s[firstNonSpaceIndex:])
     lastParen = findFirstParen(s)
     for x in range(len(s)):
-        if s[x] == "."  and not is_leaf(s[x+1:]):
-            print("Period at position:", x)
-            return "(_" + expr(s[x+1:]) + "_)" ## true
-        elif s[x] == "(" and lastParen != False:
+        if lastParen == False:
+            print('Missing end bracket at position', len(s))
+            return "P_False"
+        if s[x] == "(" and lastParen != False :
             if is_leaf(s[x+1:lastParen]):
-                return "(_" + var(s[x+1:lastParen]) + "_)"+ expr(s[lastParen + 1:]) ## true lastParen + 1
-            else:
-                return "(_" + expr(s[x+1:lastParen]) + "_)" + expr(s[lastParen+1:]) ## lastParen +1
-    #print("<p_expr> is returning nothing! input: ", s)    
-    return "P_False" ## need to handle this
+                return "(_" + var(s[x+1:lastParen]) + "_)"+ expr(s[lastParen + 1:]) ## 
+            elif expr(s[x+1:lastParen]) != "":
+                return "(_" + expr(s[x+1:lastParen]) + "_)" + expr(s[lastParen+1:]) ## 
+            elif expr(s[x+1:lastParen]) == "":
+                print('Expected expression in parantheses at', x+1)
+                return "P_False"
+    print("<p_expr> is returning nothing! input: ", s)  
+    return "P_False" ## need to handle this ?
 
 def bool_p_expr(s):
     firstNonSpaceIndex = findFirstNonSpace(s)
@@ -273,6 +277,8 @@ def is_leaf(s):
     for char in s:
         if char in funky_chars:
             return False
+    if s == "":
+        return False
     return True
 
 def expr(s):
@@ -289,7 +295,7 @@ def expr(s):
                 return p_expr(s[x:lastp])
             else:
                 return ""
-        elif s[x] == " " or s[x] == ")":
+        elif s[x] == " " or s[x] == ")": ##s[x] == " "
             return expr(s[x+1:])
         elif s[x] in alphabet_chars:
             if bool_var(s[x:]):
@@ -342,7 +348,7 @@ def parse_tokens(s_: str, association_type: Optional[str] = None) -> Union[List[
     #print(s_despaced,r_despaced)
     if s_despaced != r_despaced:
         tokenArr = False
-        print("ERROR - PARSE MISMATCH: ",s,s_despaced,r_despaced)
+        print("ERROR - PARSE MISMATCH: ",s,s_despaced,r_despaced,'\n')
     elif recurring_stuff != "":
         tokenArr = recurring_stuff.split("_") 
         
@@ -355,121 +361,7 @@ def parse_tokens(s_: str, association_type: Optional[str] = None) -> Union[List[
 
 
 
-# s1 = "\\x a b"
-# s2 = "(\\x a b)"
-
-# print(parse_tokens(s1))
-# print(parse_tokens(s2))
-
-def read_lines_from_txt_check_validity(fp: [str, os.PathLike]) -> None: # type: ignore
-    """
-    Reads each line from a .txt file, and then
-    parses each string  to yield a tokenized list of strings for printing, joined by _ characters
-    In the case of a non-valid line, the corresponding error message is printed (not necessarily within
-    this function, but possibly within the parse_tokens function).
-    :param lines: The file path of the lines to parse
-    """
-    lines = read_lines_from_txt(fp)
-    valid_lines = []
-    #print(parse_tokens(lines[0]))
-    for l in lines:
-        tokens = parse_tokens(l)
-        if tokens:
-            valid_lines.append(l)
-            print(f"The tokenized string for input string \'{l}\' is \'{'_'.join(tokens)}\'")
-    if len(valid_lines) == len(lines):
-        print(f"All lines are valid")
+s2 = "\\x. (x z)"
 
 
-
-def read_lines_from_txt_output_parse_tree(fp: [str, os.PathLike]) -> None: # type: ignore
-    """
-    Reads each line from a .txt file, and then
-    parses each string to yield a tokenized output string, to be used in constructing a parse tree. The
-    parse tree should call print_tree() to print its content to the console.
-    In the case of a non-valid line, the corresponding error message is printed (not necessarily within
-    this function, but possibly within the parse_tokens function).
-    :param fp: The file path of the lines to parse
-    """
-    lines = read_lines_from_txt(fp)
-    print(parse_tokens(lines[0]))
-    for l in lines:
-        tokens = parse_tokens(l)
-        if tokens:
-            print("\n")
-            parse_tree2 = build_parse_tree(tokens)
-            parse_tree2.print_tree()
-
-def add_associativity(s_: List[str], association_type: str = "left") -> List[str]:
-    """
-    :param s_: A list of string tokens
-    :param association_type: a string in [`left`, `right`]
-    :return: List of strings, with added parenthesis that disambiguates the original expression
-    """
-
-    # TODO Optional
-    s = s_[:]  # Don't modify original string
-    return []
-
-def build_parse_tree_rec(tokens: List[str], node: Optional[Node] = None) -> Node:
-    """
-    An inner recursive inner function to build a parse tree
-    :param tokens: A list of token strings
-    :param node: A Node object
-    :return: a node with children whose tokens are variables, parenthesis, slashes, or the inner part of an expression
-    """
-
-    #TODO
-
-    return Node()
-
-def build_parse_tree(tokens: List[str]) -> ParseTree:
-    """
-    Build a parse tree from a list of tokens
-    :param tokens: List of tokens
-    :return: parse tree
-    """
-    pt = ParseTree(build_parse_tree_rec(tokens))
-    return pt
-
-
-if __name__ == "__main__":
-
-    print("\n\nChecking valid examples...")
-
-
-    # lines = read_lines_from_txt(invalid_examples_fp)
-    # valid_lines = []
-    # print(parse_tokens("\\ x . a b"))
-
-    # # Sample list
-    # my_list = ['a', 'b', 'c', 'd', 'e']
-
-    # # Index of the element to be split
-    # index_to_split = 2  # splitting 'c'
-
-    # # The two new elements to insert
-    # new_element1 = 'x'
-    # new_element2 = 'y'
-
-    # # Perform the split
-    # my_list[index_to_split:index_to_split + 1] = [new_element1, new_element2]
-
-    # # Print the updated list
-    # print(my_list)
-
-    read_lines_from_txt_check_validity(valid_examples_fp)
-    #read_lines_from_txt_output_parse_tree(valid_examples_fp)
-
-    # print("Checking invalid examples...")
-    # read_lines_from_txt_check_validity(invalid_examples_fp)
-    
-    # # Optional
-    # print("\n\nAssociation Examples:")
-    # sample = ["a", "b", "c"]
-    # print("Right association")
-    # associated_sample_r = add_associativity(sample, association_type="right")
-    # print(associated_sample_r)
-    # print("Left association")
-    # associated_sample_l = add_associativity(sample, association_type="left")
-    # print(associated_sample_l)
+print(parse_tokens(s2))

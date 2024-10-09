@@ -165,22 +165,23 @@ def l_expr(s): # <lambda_expr>::= '\' <var> '.' <expr> | '\' <var> <paren_expr>
             #print("Checking this for leafness:",s[x+endOfVar:])
             if endOfVar != False : ##  (bool_l_expr(s[x+1:]) or bool_p_expr(s[x+1:])) or something like this : and not is_leaf(s[x+endOfVar+1:])
                 currentVar = s[x+1:x+endOfVar+1]
-                #print("what lambda is seeing as var: " +currentVar)
+
 
                 if bool_var(currentVar) and expr(s[x+endOfVar+1:]) != "":
                     return  "\_" + currentVar +"_"+expr(s[x+endOfVar+1:]) ## recursing to <expr> add \?
-                else:
-                    #print("lamda seeing something bad")
+                elif not bool_var(currentVar):
+                    print("Expected variable in lambda expression at position ",x + 1,", Recieved:", currentVar )
                     return "False"
-            #elif endOfVar != False and is_leaf(s[x+endOfVar+1:]):
-                
+                elif not expr(s[x+endOfVar+1:]) != "":
+                    print("Missing expression in lambda expression at position",x + 1 )
+                    return "False"                
             else: 
-                #print("Couldn't find variable in lambda expression statement ")
+                print("Couldn't find variable in lambda expression statement ")
                 return "L_False"
         elif s[x] == " ":
             continue
         else:
-            #print("Expected '\\', got" + s[x]) ## at position x
+            print("Expected '\\', got" + s[x]) ## at position x
             return "L_False"    
         
 def bool_l_expr(s): # <lambda_expr>::= '\' <var> '.' <expr> | '\' <var> <paren_expr> 
@@ -194,7 +195,7 @@ def bool_l_expr(s): # <lambda_expr>::= '\' <var> '.' <expr> | '\' <var> <paren_e
                 if bool_var(currentVar):
                     return True
                 else:
-                    #print("lamda seeing something bad")
+                    print("Expected variable in lambda expression at position ",x + 1,", Recieved:", currentVar )
                     return False
             else: 
                 print("Couldn't find variable in lambda expression statement ")
@@ -202,13 +203,12 @@ def bool_l_expr(s): # <lambda_expr>::= '\' <var> '.' <expr> | '\' <var> <paren_e
         elif s[x] == " ":
             continue
         else:
-            #print("Expected '\\', got " + s[x]) ## at position x
+            print("Expected '\\', got " + s[x]) 
             return False    
     
 def findLastParen(s):
     id = s.rfind(")")
     if id == -1:
-        #print("Cant find parenthesis in ", s)
         return False
     else:
         return id
@@ -220,7 +220,6 @@ def findFirstParen(s):
         if s[x] == "(":
             opening += 1
         if s[x] == ")" and opening > 1:
-            #print(s[x], opening)
             opening -= 1
         elif s[x] == ")":
             return x
@@ -232,7 +231,6 @@ def findFirstNonSpace(s):
     for i, char in enumerate(s):
         if char != ' ':
             return i
-    #print('Could\'t find nonspace in string ',s)
     return False
 
 def handleAbstraction(s):
@@ -247,41 +245,29 @@ def handleAbstraction(s):
     while absCount > 0: 
         absCount -= 1
         new_s += ")"
-
     new_s = new_s.replace("( ", "(")
     return new_s
 
 
-def handleAbstractionBetter(s):
-    new_s = ""
-    absCount = 0
-    for x in range(len(s)):
-        if s[x] =="." and s[x+1] == " ":
-            new_s += "(" 
-            absCount += 1
-        else:
-            new_s += s[x]
-    while absCount > 0: 
-        absCount -= 1
-        new_s += ")"
-    return new_s
 
-
-def p_expr(s):
+def p_expr(s): ##  NEEDS FIXING, CATCH CASE OF PARANTHESES WITH NOTHING IN IT LIKE I DID IN L_EXPR
     firstNonSpaceIndex = findFirstNonSpace(s)
     #print("<p_expr>: \t" + s[firstNonSpaceIndex:])
     lastParen = findFirstParen(s)
     for x in range(len(s)):
-        if s[x] == "."  and not is_leaf(s[x+1:]):
-            print("Period at position:", x)
-            return "(_" + expr(s[x+1:]) + "_)" ## true
-        elif s[x] == "(" and lastParen != False:
+        if lastParen == False:
+            print('Missing end bracket')
+            return "P_False"
+        if s[x] == "(" and lastParen != False :
             if is_leaf(s[x+1:lastParen]):
-                return "(_" + var(s[x+1:lastParen]) + "_)"+ expr(s[lastParen + 1:]) ## true lastParen + 1
-            else:
-                return "(_" + expr(s[x+1:lastParen]) + "_)" + expr(s[lastParen+1:]) ## lastParen +1
-    print("<p_expr> is returning nothing! input: ", s)   #Expected ")" at (some index) 
-    return "P_False" ## need to handle this
+                return "(_" + var(s[x+1:lastParen]) + "_)"+ expr(s[lastParen + 1:]) ## 
+            elif expr(s[x+1:lastParen]) != "":
+                return "(_" + expr(s[x+1:lastParen]) + "_)" + expr(s[lastParen+1:]) ## 
+            elif expr(s[x+1:lastParen]) == "":
+                print('Expected expression in parantheses at', x+1)
+                return "P_False"
+    print("<p_expr> is returning nothing! input: ", s)  
+    return "P_False" ## need to handle this ?
 
 def bool_p_expr(s):
     firstNonSpaceIndex = findFirstNonSpace(s)
@@ -368,7 +354,7 @@ def parse_tokens(s_: str, association_type: Optional[str] = None) -> Union[List[
     #print(s_despaced,r_despaced)
     if s_despaced != r_despaced:
         tokenArr = False
-        print("ERROR - PARSE MISMATCH: ",s,s_despaced,r_despaced)
+        print("ERROR - PARSE MISMATCH: ",s,s_despaced,r_despaced,'\n')
     elif recurring_stuff != "":
         tokenArr = recurring_stuff.split("_") 
         
@@ -484,7 +470,7 @@ if __name__ == "__main__":
     # # Print the updated list
     # print(my_list)
 
-    read_lines_from_txt_check_validity(valid_examples_fp)
+    read_lines_from_txt_check_validity(invalid_examples_fp)
     #read_lines_from_txt_output_parse_tree(valid_examples_fp)
 
     # print("Checking invalid examples...")

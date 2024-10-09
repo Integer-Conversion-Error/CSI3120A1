@@ -20,4 +20,11 @@ a (b c)
 (a) (b) (\x(x b)) (\x(x yz))
 (a b)
 (a) (b)
-(a) (b) (c) (d)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
+(a) (b) (c) (d)
+(A B)
+abc
+a b c
+a (b c)
+(\x a b)
+\x. a b
+(\x((a) (b)))                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
