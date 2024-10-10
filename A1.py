@@ -177,6 +177,7 @@ def bool_var(s):
 
 def l_expr(s): # <lambda_expr>::= '\' <var> '.' <expr> | '\' <var> <paren_expr> | '\' <var> <expr>
     global errorMsg
+    #print("<l_expr>: \t" + s[findFirstNonSpace(s):])
     for x in range(len(s)):
         if s[x] == "\\": ## finding '\'
             endOfVar = var_idx(s[x+1:len(s)]) + x + 1 ## finding <var> 
@@ -222,6 +223,7 @@ def bool_l_expr(s): # <lambda_expr>::= '\' <var> '.' <expr> | '\' <var> <paren_e
     
 def p_expr(s): 
     global errorMsg
+    #print("<p_expr>: \t" + s[findFirstNonSpace(s):])
     firstParen = findFirstParen(s) ## means we have left association
     for x in range(len(s)):
         if firstParen == False:
@@ -242,6 +244,7 @@ def p_expr(s):
     return "" ## need to handle this ?
 
 def bool_p_expr(s):
+    firstNonSpaceIndex = findFirstNonSpace(s)
     #print("<bool_p_expr>: \t" + s[firstNonSpaceIndex:])
     lastParen = findLastParen(s)
     if s == "()": 
@@ -276,7 +279,7 @@ def expr(s):
             if bool_p_expr(s[x:lastp]):
                 return p_expr(s[x:lastp])
             elif findLastParen(s) < 0:
-                errorMsg.append("Missing closing parentheses")
+                errorMsg.append("Missing closing parentheses ")
                 return ""
             else:
                 errorMsg.append("Invalid parantheses expression: "+s)
@@ -291,7 +294,7 @@ def expr(s):
             else:
                 return ""
         elif s[x] not in all_valid_chars:
-            ermesg = 'Invalid character ' + s[x] +'in ' + s
+            ermesg = 'Invalid character ' + s[x] +' in ' + s
             errorMsg.append(ermesg)
             return ""
         else:
@@ -333,8 +336,10 @@ def parse_tokens(s_: str, association_type: Optional[str] = None) -> Union[List[
     r_despaced = r_despaced.replace(" ","")
     if s_despaced != r_despaced:
         tokenArr = False
-        print("\nERROR - PARSE MISMATCH: ",s,s_despaced,r_despaced) ## comment this out!
-        print(errorMsg, "\n") ## make into for loop to print individual error msgs
+        #print("\nERROR - PARSE MISMATCH: ",s,s_despaced,r_despaced) ## comment this out!
+        for msg in errorMsg:
+            print(msg)
+        print("\n") ## make into for loop to print individual error msgs
     
     elif recurring_stuff != "":
         tokenArr = recurring_stuff.split("_") 
@@ -394,24 +399,18 @@ def add_associativity(s_: List[str], association_type: str = "left") -> List[str
 
 
 # This function finds the most outer bracket for a string list
-def findMostOuterBracket(inputString: List[str]) -> int:
-    # If list input does not start with a ")"
-    if inputString[0] != "(":
-        return -1
-    else:
-        # Use a stack to keep track of the brackets
-        trackingStack = []
-        i = 0
-        # Traversing through list to find index of the most outer bracket
-        while i < len(inputString):
-            if inputString[i] == "(":
-                trackingStack.append("(")
-                i = i + 1
-            elif inputString[i] == ")" and len(trackingStack) > 1:
-                trackingStack.pop(len(inputString) - 1)
-                i = i + 1
-            else:
-                return i
+def findLastBracket(lst):
+    # Iterate through the list in reverse order
+    for i in range(len(lst) - 1, -1, -1):
+        # Check if the string contains a closing parenthesis
+        if ')' in lst[i]:
+            # Find the index of the last closing parenthesis in the string
+            return i
+    # Return -1 if no closing parenthesis is found
+    return -1
+
+
+
 
 
 # Note: Try removing while loop and only use if-else statements
@@ -429,27 +428,29 @@ def build_parse_tree_rec(tokens: List[str], node: Optional[Node] = None) -> Node
     # If there is no root node
     if not node:
         node = Node(tokens)
-        #node.add_child_node(build_parse_tree_rec(tokens,node))
+        node.add_child_node(build_parse_tree_rec(tokens,node))
         
     # If the token is a variable name or a lambda sign
     if len(tokens[0]) == 1 and tokens[0] in avc: 
-        node = Node(tokens[0])
+        node.add_child_node(Node(tokens[0]))
         node.add_child_node(build_parse_tree_rec(tokens[1:],node))
         
         # If the token is a variable with a length > then 1
     elif len(tokens[0]) > 1:                           
-        node = Node(tokens[0])
+        node.add_child_node(Node(tokens[0]))
         node.add_child_node(build_parse_tree_rec(tokens[1:],node))
         
     # If the token is a opening bracket
     elif tokens[0] == "(":
-        closingBracketIndex = findMostOuterBracket(tokens)
+        closingBracketIndex = findLastBracket(tokens)
         # Test case(Leave out of final code**)
         if closingBracketIndex == -1:
             print("Issue with list input when recurrsivlty making parse tree")
             print(tokens)
         else:
             subnode = Node(tokens[1:closingBracketIndex - 1])
+            node.add_child_node(subnode)  
+            node = subnode
             node.add_child_node(Node(tokens[0]))
             #node.add_child_node(subnode)                 
             node.add_child_node(build_parse_tree_rec(tokens[1: closingBracketIndex - 1], subnode))
@@ -473,13 +474,15 @@ def build_parse_tree(tokens: List[str]) -> ParseTree:
 
 if __name__ == "__main__":
 
-    string = "\_x_(_\_y_(_x_y_)_)"
+    string = "(_\_y_(_x_y_)_)"
     newLst = string.rsplit("_")
+    #print(newLst)
+    #print(findLastBracket(newLst))
     tokenTree = build_parse_tree(newLst)
     tokenTree.print_tree()
-    #print("\n\nChecking valid examples...")
-    #read_lines_from_txt_check_validity(valid_examples_fp)
-    #read_lines_from_txt_output_parse_tree(valid_examples_fp)
+    # print("\n\nChecking valid examples...")
+    # read_lines_from_txt_check_validity(valid_examples_fp)
+    # #read_lines_from_txt_output_parse_tree(valid_examples_fp)
 
-    #print("Checking invalid examples...")
-    #read_lines_from_txt_check_validity(invalid_examples_fp)
+    # print("Checking invalid examples...")
+    # read_lines_from_txt_check_validity(invalid_examples_fp)
