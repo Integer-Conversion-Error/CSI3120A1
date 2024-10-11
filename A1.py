@@ -392,6 +392,7 @@ def parse_tokens(s_: str, association_type: Optional[str] = None) -> Union[List[
     r_despaced = r_despaced.replace(" ", "")
     if s_despaced != r_despaced:
         tokenArr = False
+        print(s_despaced)
         for msg in errorMsg:
             print(msg)
         print("\n")
