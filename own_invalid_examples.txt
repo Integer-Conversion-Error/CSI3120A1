@@ -1,23 +1,4 @@
-\x. 
 \x.
-(\x. x
-x)
-(a \x. x)
-(f \. y)
-(\x. (y))
-((a b)
-\x x)
-(\x. y z
-((x y)) z))
-a (b
-(\x y. x)
-\x . x
-f \x. x)
-( a b
-\x (x y))
-\x \x.x
-(a \. x)
-\x. (\x. y z))
-\x. (.)
-(abc \x. x)
-(\.x)
+(a
+a)
+(\x. )

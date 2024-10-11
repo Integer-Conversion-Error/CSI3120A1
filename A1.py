@@ -11,6 +11,8 @@ all_valid_chars = var_chars + funky_chars
 avc = var_chars + ["\\"]
 valid_examples_fp = "./valid_examples.txt"
 invalid_examples_fp = "./invalid_examples.txt"
+own_valid_examples_fp = "./own_valid_ex.txt"
+own_invalid_examples_fp = "./own_invalid_examples.txt"
 
 recursionLevel = 0
 parCount = 0
@@ -508,6 +510,7 @@ def build_parse_tree_rec(tokens: List[str], node: Optional[Node] = None) -> Node
                 index += 1
             else:
                 index += 1
+            
     return node
 
 def build_parse_tree(tokens: List[str]) -> ParseTree:
@@ -524,5 +527,11 @@ if __name__ == "__main__":
     read_lines_from_txt_check_validity(valid_examples_fp)
     read_lines_from_txt_output_parse_tree(valid_examples_fp)
 
+    print("\n\nChecking custom valid examples...")
+    read_lines_from_txt_check_validity(own_valid_examples_fp)
+    read_lines_from_txt_output_parse_tree(own_valid_examples_fp)
+
     print("Checking invalid examples...")
     read_lines_from_txt_check_validity(invalid_examples_fp)
+    print("Checking own invalid examples...")
+    read_lines_from_txt_check_validity(own_invalid_examples_fp)
