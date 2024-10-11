@@ -423,7 +423,7 @@ def read_lines_from_txt_output_parse_tree(fp: [str, os.PathLike]) -> None: # typ
     :param fp: The file path of the lines to parse.
     """
     lines = read_lines_from_txt(fp)
-    print(parse_tokens(lines[0]))
+    #print(parse_tokens(lines[0]))
     for l in lines:
         tokens = parse_tokens(l)
         if tokens:
@@ -492,8 +492,8 @@ def build_parse_tree_rec(tokens: List[str], node: Optional[Node] = None) -> Node
                 openingBracketIndex, closingBracketIndex = matchParantheses(tokens)
                 if closingBracketIndex < index and closingBracketIndex != -1:
                     closingBracketIndex += index
-                if closingBracketIndex == -1:
-                    print(tokens)
+                #if closingBracketIndex == -1:
+                    #print(tokens)
                 if closingBracketIndex < index:
                     closingBracketIndex += index
                 else:
