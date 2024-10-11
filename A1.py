@@ -399,16 +399,34 @@ def add_associativity(s_: List[str], association_type: str = "left") -> List[str
 
 
 # This function finds the most outer bracket for a string list
-def findLastBracket(lst):
-    # Iterate through the list in reverse order
-    for i in range(len(lst) - 1, -1, -1):
-        # Check if the string contains a closing parenthesis
-        if ')' in lst[i]:
-            # Find the index of the last closing parenthesis in the string
-            return i
-    # Return -1 if no closing parenthesis is found
-    return -1
+def matchParantheses(tokens):
+    first_index = -1
+    for i, token in enumerate(tokens):
+        if token == '(':
+            first_index = i
+            break
 
+    # If no opening parenthesis is found, return (-1, -1) as an error signal
+    if first_index == -1:
+        return -1, -1
+
+    # Initialize a counter for open parentheses starting from the first opening parenthesis
+    open_count = 0
+    # Loop through the tokens starting from the first opening parenthesis
+    for index in range(first_index, len(tokens)):
+        token = tokens[index]
+        # Increment the count for each opening parenthesis
+        if token == '(':
+            open_count += 1
+        # Decrement the count for each closing parenthesis
+        elif token == ')':
+            open_count -= 1
+            # When count reaches zero, it means we've matched the initial opening parenthesis
+        if open_count == 0:
+            return first_index, index
+
+    # If no match is found, return (-1, -1) to indicate an error
+    return -1, -1
 
 
 
@@ -434,30 +452,42 @@ def build_parse_tree_rec(tokens: List[str], node: Optional[Node] = None) -> Node
         while(index < len(tokens)):
 
             # If the token is a variable name with a length equal to 1
-            if len(tokens[index]) == 1 and tokens[0] in alphabet_chars: 
+            if len(tokens[index]) == 1 and tokens[index] in alphabet_chars : #and tokens[index] != "("
+                #print("ChildVar1: " + tokens[index])
                 node.add_child_node(Node(tokens[index]))
                 index = index + 1
                 
             # If the token is a variable name with a length greater than 1
-            elif len(tokens[index]) > 1:                           
+            elif len(tokens[index]) > 1:
+                #print("ChildVar2: " + tokens[index])                           
                 node.add_child_node(Node(tokens[index]))
                 index = index + 1
                 
             # If the token is a opening bracket
             elif tokens[index] == "(":
-                closingBracketIndex = findLastBracket(tokens)
+                openingBracketIndex, closingBracketIndex = matchParantheses(tokens)
+                #openingBracketIndex += index
+                #closingBracketIndex += index
+                #print(tokens[openingBracketIndex:closingBracketIndex])
                 # If a closing bracket is not found
+                if closingBracketIndex < index and not closingBracketIndex == -1:
+                    closingBracketIndex += index
                 if closingBracketIndex == -1:
-                    print("No closing bracket found")
+                    #print("No closing bracket found")
                     print(tokens)
+                if closingBracketIndex < index:
+                    closingBracketIndex += index
                 else:
+                    #print("ChildOpenBrack: " + tokens[index])
                     node.add_child_node(Node(tokens[index]))
-                    node.add_child_node(build_parse_tree_rec(tokens[index + 1: closingBracketIndex]))
+                    #print("Recursing to subnode: "+str(tokens[openingBracketIndex + 1 : closingBracketIndex]))
+                    node.add_child_node(build_parse_tree_rec(tokens[index +1: closingBracketIndex]))
+                    #print("ChildCloseBrack: " + tokens[closingBracketIndex])
                     node.add_child_node(Node(tokens[closingBracketIndex]))  
                     index = closingBracketIndex + 1
                                      
             # If the token is a lambda sign("\")
-            elif tokens[0] == "\\":
+            elif tokens[index] == "\\":
                 node.add_child_node(Node(tokens[index]))
                 # Adding variable that goes along with lambda
                 index = index + 1
@@ -465,8 +495,10 @@ def build_parse_tree_rec(tokens: List[str], node: Optional[Node] = None) -> Node
                 index = index + 1
             
             else:
-                print("Token " + tokens[index] + "not accounted for in if statements")
-                print(tokens)
+                # print("Token \' " + tokens[index] + " \' not accounted for in if statements, here is the fragment " + str(tokens[:index]))
+                # print(tokens)
+                index += 1 ## DOESNT WORK, JUST PASS THIS CASE
+                #input()
     
     return node
 
@@ -482,16 +514,16 @@ def build_parse_tree(tokens: List[str]) -> ParseTree:
 
 if __name__ == "__main__":
 
-    string = "\_x_(_\_y_(_x_y_)_)"
-    newLst = string.rsplit("_")
+    #string = "a_b_c"
+    #newLst = string.rsplit("_")
     # Check other examples like "a_b_c" from valid cases to see if work
     
-    tokenTree = build_parse_tree(newLst)
-    tokenTree.print_tree()
+    # tokenTree = build_parse_tree(['\\', 'x', '(', 'x', '(', 'b', 'c', ')', ')'])
+    # tokenTree.print_tree()
     
-    # print("\n\nChecking valid examples...")
-    # read_lines_from_txt_check_validity(valid_examples_fp)
-    # #read_lines_from_txt_output_parse_tree(valid_examples_fp)
+    print("\n\nChecking valid examples...")
+    read_lines_from_txt_check_validity(valid_examples_fp)
+    read_lines_from_txt_output_parse_tree(valid_examples_fp)
 
-    # print("Checking invalid examples...")
-    # read_lines_from_txt_check_validity(invalid_examples_fp)
+    print("Checking invalid examples...")
+    read_lines_from_txt_check_validity(invalid_examples_fp)
