@@ -484,9 +484,10 @@ if __name__ == "__main__":
 
     string = "\_x_(_\_y_(_x_y_)_)"
     newLst = string.rsplit("_")
+    # Check other examples like "a_b_c" from valid cases to see if work
     
-    #tokenTree = build_parse_tree(newLst)
-    #tokenTree.print_tree()
+    tokenTree = build_parse_tree(newLst)
+    tokenTree.print_tree()
     
     # print("\n\nChecking valid examples...")
     # read_lines_from_txt_check_validity(valid_examples_fp)
