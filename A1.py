@@ -1,9 +1,7 @@
 import os
 from typing import Union, List, Optional
 
-#from sklearn import tree
-
-
+# from sklearn import tree
 
 alphabet_chars = list("abcdefghijklmnopqrstuvwxyz") + list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 numeric_chars = list("0123456789")
@@ -22,62 +20,81 @@ errorMsg = []
 
 def read_lines_from_txt(fp: [str, os.PathLike]) -> List[str]: # type: ignore
     """
+    Reads lines from a given file path and returns them as a list of strings with leading and trailing
+    whitespaces removed.
     :param fp: File path of the .txt file.
-    :return: The lines of the file path removing trailing whitespaces
-    and newline characters.
+    :return: A list of stripped strings, each representing a line from the file.
     """
-
     with open(fp, 'r') as file:
-
         lines = [line.strip() for line in file.readlines()]
-        
     return lines
 
 def handleTokens():
+    """
+    Appends closing parentheses to `tokenArr` until `parCount` reaches zero.
+    This function is used when balancing parentheses during token handling.
+    """
     while parCount > 0:
         tokenArr.append(")")
 
 class Node:
     """
-    Nodes in a parse tree
+    Represents a node in a parse tree.
     Attributes:
-        elem: a list of strings
-        children: a list of child nodes
+        elem: A list of strings representing the content of the node.
+        children: A list of child nodes representing sub-expressions.
     """
     def __init__(self, elem: List[str] = None):
         self.elem = elem
         self.children = []
 
-
     def add_child_node(self, node: 'Node') -> None:
+        """
+        Adds a child node to the current node.
+        :param node: The child node to be added.
+        """
         self.children.append(node)
 
 class ParseTree:
     """
-    A full parse tree, with nodes
+    Represents a full parse tree with nodes.
     Attributes:
-        root: the root of the tree
+        root: The root node of the tree.
     """
     def __init__(self, root):
         self.root = root
 
     def print_tree(self, node: Optional[Node] = None, level: int = 0) -> None:
+        """
+        Recursively prints the parse tree starting from the given node.
+        :param node: The current node to print from. Defaults to the root if None.
+        :param level: The current level of indentation for pretty printing.
+        """
         if node is None:
-            node = self.root  
+            node = self.root
 
         print("\t" * level + str(node.elem))
-
         for child in node.children:
             self.print_tree(child, level + 1)
 
 def findLastParen(s):
+    """
+    Finds the index of the last closing parenthesis in the string.
+    :param s: The input string.
+    :return: The index of the last closing parenthesis, or False if not found.
+    """
     id = s.rfind(")")
     if id == -1:
         return False
     else:
         return id
-    
+
 def findFirstParen(s):
+    """
+    Finds the index of the first unmatched closing parenthesis in the string.
+    :param s: The input string.
+    :return: The index of the first unmatched closing parenthesis, or False if not found.
+    """
     x = 0
     opening = 0
     while x < len(s):
@@ -88,20 +105,30 @@ def findFirstParen(s):
         elif s[x] == ")":
             return x
         x += 1
-
     return False
 
 def findFirstNonSpace(s):
+    """
+    Finds the index of the first non-space character in a string.
+    :param s: The input string.
+    :return: The index of the first non-space character, or False if the string is empty.
+    """
     for i, char in enumerate(s):
         if char != ' ':
             return i
     return False
 
 def handleAbstraction(s):
+    """
+    Converts dot notation in a string representing lambda expressions into parentheses for better parsing.
+    This function ensures proper nesting of lambda expressions.
+    :param s: The input string.
+    :return: A transformed string with dot notation replaced by parentheses.
+    """
     new_s = ""
     absCount = 0
     for char in s:
-        if char ==".":
+        if char == ".":
             new_s += "(" 
             absCount += 1
         else:
@@ -114,38 +141,33 @@ def handleAbstraction(s):
 
 def is_valid_var_name(s: str) -> bool:
     """
-    :param s: Candidate input variable name
-    :return: True if the variable name starts with an alphabetic character,
-    contains only alphabetic characters and digits, and has no spaces.
-    Returns False otherwise.
+    Checks if a given string is a valid variable name.
+    A valid variable starts with an alphabetic character and may contain alphanumeric characters.
+    :param s: Candidate input variable name.
+    :return: True if the variable name is valid, False otherwise.
     """
-    if len(s) == 0: #empty string
-        return False  
-
-    if s[0] not in alphabet_chars: # nonalpha first char
+    if len(s) == 0:
         return False
-
+    if s[0] not in alphabet_chars:
+        return False
     for char in s[1:]:
         if char not in var_chars or char == ' ':
             return False
-
     return True
 
 def var_idx(s: str):
     """
-    Find the index of the last character of a valid variable in the string.
-    :param s: The input string
-    :return: The index of the last character of the valid variable, or -1 if no valid variable is found
+    Finds the index of the last character of a valid variable in a string.
+    :param s: The input string.
+    :return: The index of the last character of the valid variable, or False if not found.
     """
     last_valid_index = -1
-
     for i in range(1, len(s) + 1):
         try:
             if is_valid_var_name(s[:i]) or s[i] == " ":
-                last_valid_index = i - 1  
-            
+                last_valid_index = i - 1
             else:
-                break 
+                break
         except IndexError:
             break
     if last_valid_index == -1:
@@ -153,111 +175,144 @@ def var_idx(s: str):
     return last_valid_index
 
 def var(s):
+    """
+    Parses a valid variable or expression from a string.
+    Recursively checks if there are further expressions after the variable.
+    :param s: The input string containing the potential variable.
+    :return: The parsed variable or expression.
+    """
     firstNonSpaceIndex = findFirstNonSpace(s)
-    #print("<var>:  \t" + s[firstNonSpaceIndex:])
     if is_valid_var_name(s):
         return s
-    for x in range(firstNonSpaceIndex,len(s)):
+    for x in range(firstNonSpaceIndex, len(s)):
         if is_valid_var_name(s[:x]):
-            for y in range(x,len(s) + 1):
+            for y in range(x, len(s) + 1):
                 if is_valid_var_name(s[:y-1]) and not is_valid_var_name(s[x:y]):
-                    return s[:y-1] + "_"+ expr(s[y-1:])
-    print("Outside of VAR block! ")
-    return s 
+                    return s[:y-1] + "_" + expr(s[y-1:])
+    print("Outside of VAR block!")
+    return s
 
 def bool_var(s):
+    """
+    Checks if a string can be parsed as a valid variable.
+    :param s: The input string.
+    :return: True if the string is a valid variable, False otherwise.
+    """
     if is_valid_var_name(s):
         return True
     for x in range(len(s)):
         if is_valid_var_name(s[:x]):
-            for y in range(x,len(s) + 1):
+            for y in range(x, len(s) + 1):
                 if is_valid_var_name(s[0:y-1]) and not is_valid_var_name(s[x:y]):
                     return True
-    return False 
+    return False
 
-def l_expr(s): # <lambda_expr>::= '\' <var> '.' <expr> | '\' <var> <paren_expr> | '\' <var> <expr>
+def l_expr(s):
+    """
+    Parses a lambda expression from the input string according to the grammar.
+    Handles expressions of the form '\\' <var> '.' <expr>.
+    :param s: The input string representing a lambda expression.
+    :return: The parsed lambda expression as a string if valid, or an empty string in case of errors.
+    """
     global errorMsg
-    #print("<l_expr>: \t" + s[findFirstNonSpace(s):])
     for x in range(len(s)):
-        if s[x] == "\\": ## finding '\'
-            endOfVar = var_idx(s[x+1:len(s)]) + x + 1 ## finding <var> 
-            if endOfVar != False : 
+        if s[x] == "\\":  # Finding the '\' (lambda symbol)
+            endOfVar = var_idx(s[x+1:len(s)]) + x + 1  # Finding <var>
+            if endOfVar != False:
                 currentVar = s[x+1:x+endOfVar+1]
                 if bool_var(currentVar) and expr(s[x+endOfVar+1:]) != "":
-                    return  "\_" + currentVar +"_"+expr(s[x+endOfVar+1:]) ## recursing to <expr> add \?
+                    return  "\_" + currentVar + "_" + expr(s[x+endOfVar+1:])
                 if not bool_var(currentVar):
-                    ermesg = str("Expected variable in lambda expression at position" + str(x + 1) + ", Recieved:" + currentVar + ": " + s)
+                    ermesg = "Expected variable in lambda expression at position " + str(x + 1) + ", Received: " + currentVar + ": " + s
                     errorMsg.append(ermesg)
-                    return "" #False
-                if expr(s[x+endOfVar+1:]) == "": #not !=
-                    ermesg = str("Missing expression in lambda expression at position " + str(x + 1)+ ": " + s)
+                    return ""  # Handle error gracefully
+                if expr(s[x+endOfVar+1:]) == "":
+                    ermesg = "Missing expression in lambda expression at position " + str(x + 1) + ": " + s
                     errorMsg.append(ermesg)
-                    return "" # False                             
-            else: 
-                ermesg = "Couldn't find variable in lambda expression statement "
+                    return ""  # Handle error gracefully
+            else:
+                ermesg = "Couldn't find variable in lambda expression statement"
                 errorMsg.append(ermesg)
-                return "" # L_False
+                return ""  # Handle error gracefully
         elif s[x] == " ":
             continue
         else:
-            errorMsg+= "Expected '\\', got" + s[x] ## at position x
-            return ""     #L_False
-        
-def bool_l_expr(s): # <lambda_expr>::= '\' <var> '.' <expr> | '\' <var> <paren_expr> 
+            errorMsg.append("Expected '\\', got " + s[x])  # Expected a lambda symbol, got something else
+            return ""  # Handle error gracefully
+
+def bool_l_expr(s):
+    """
+    Checks if the given string can be parsed as a valid lambda expression.
+    :param s: The input string.
+    :return: True if the string represents a valid lambda expression, False otherwise.
+    """
     global errorMsg
     for x in range(len(s)):
-        if s[x] == "\\": ## finding '\'
-            endOfVar = var_idx(s[x+1:len(s)]) + x + 1 ## finding <var> 
-            if endOfVar != False :
+        if s[x] == "\\":  # Finding '\'
+            endOfVar = var_idx(s[x+1:len(s)]) + x + 1  # Finding <var>
+            if endOfVar != False:
                 currentVar = s[x+1:x+endOfVar+1]
                 if bool_var(currentVar):
                     return True
                 else:
                     return False
-            else: 
+            else:
                 return False
         elif s[x] == " ":
             continue
         else:
-            return False    
-    
-def p_expr(s): 
+            return False
+
+def p_expr(s):
+    """
+    Parses a parenthesized expression from the input string.
+    Handles cases such as (a), (a b), (a (b)), etc.
+    :param s: The input string.
+    :return: The parsed parenthesized expression if valid, or an empty string in case of errors.
+    """
     global errorMsg
-    #print("<p_expr>: \t" + s[findFirstNonSpace(s):])
-    firstParen = findFirstParen(s) ## means we have left association
+    firstParen = findFirstParen(s)
     for x in range(len(s)):
         if firstParen == False:
-            ermesg = 'Missing end bracket' #at position ' + str(len(s))
+            ermesg = 'Missing end bracket'
             errorMsg.append(ermesg)
             return ""
-        if s[x] == "(" and firstParen != False :
+        if s[x] == "(" and firstParen != False:
             if is_leaf(s[x+1:firstParen]):
-                return "(_" + var(s[x+1:firstParen]) + "_)" + expr(s[firstParen + 1:]) ## (a)(b)(c)(d)
+                return "(_" + var(s[x+1:firstParen]) + "_)" + expr(s[firstParen + 1:])
             elif expr(s[x+1:firstParen]) != "":
-                return "(_" + expr(s[x+1:firstParen]) + "_)" + expr(s[firstParen+1:]) ## (a (b)) (bcd)
+                return "(_" + expr(s[x+1:firstParen]) + "_)" + expr(s[firstParen+1:])
             elif expr(s[x+1:firstParen]) == "":
-                ermesg = 'Expected expression in parantheses' #at ' + str(x+1)
+                ermesg = 'Expected expression in parentheses'
                 errorMsg.append(ermesg)
                 return ""
-    ermesg ="<p_expr> is returning nothing! input: " + s
+    ermesg = "<p_expr> is returning nothing! input: " + s
     errorMsg.append(ermesg)
-    return "" ## need to handle this ?
+    return ""
 
 def bool_p_expr(s):
+    """
+    Checks if the given string can be parsed as a valid parenthesized expression.
+    :param s: The input string.
+    :return: True if the string represents a valid parenthesized expression, False otherwise.
+    """
     firstNonSpaceIndex = findFirstNonSpace(s)
-    #print("<bool_p_expr>: \t" + s[firstNonSpaceIndex:])
     lastParen = findLastParen(s)
-    if s == "()": 
-        return False 
+    if s == "()":
+        return False
     for x in range(len(s)):
         if s[x] == ".":
-            return True ## true
+            return True
         elif s[x] == "(" and lastParen != False:
-            return True ## true
-    #print("<p_expr> is returning nothing! input: ", s)    
-    return False ## need to handle this
+            return True
+    return False
 
 def is_leaf(s):
+    """
+    Checks if the given string is a leaf node, meaning it contains no nested expressions.
+    :param s: The input string.
+    :return: True if the string is a leaf node, False otherwise.
+    """
     for char in s:
         if char in funky_chars:
             return False
@@ -266,7 +321,12 @@ def is_leaf(s):
     return True
 
 def expr(s):
-    #print("<expr>: \t" + s)
+    """
+    Recursively parses the input string as a general expression.
+    Handles lambda expressions, variables, and parenthesized expressions.
+    :param s: The input string.
+    :return: The parsed expression as a string, or an empty string if the expression is invalid.
+    """
     for x in range(len(s)):
         if s[x] == "\\":
             if bool_l_expr(s[x:]):
@@ -279,10 +339,10 @@ def expr(s):
             if bool_p_expr(s[x:lastp]):
                 return p_expr(s[x:lastp])
             elif findLastParen(s) < 0:
-                errorMsg.append("Missing closing parentheses ")
+                errorMsg.append("Missing closing parentheses")
                 return ""
             else:
-                errorMsg.append("Invalid parantheses expression: "+s)
+                errorMsg.append("Invalid parentheses expression: " + s)
                 return ""
         elif s[x] == " " or s[x] == ")":
             return expr(s[x+1:])
@@ -294,28 +354,22 @@ def expr(s):
             else:
                 return ""
         elif s[x] not in all_valid_chars:
-            ermesg = 'Invalid character ' + s[x] +' in ' + s
+            ermesg = 'Invalid character ' + s[x] + ' in ' + s
             errorMsg.append(ermesg)
             return ""
         else:
             return ""
     if invalidFlag:
         return False
-    ## BLANK PARANTHESES CASE??    
-    return "" # false
+    return ""
 
 def parse_tokens(s_: str, association_type: Optional[str] = None) -> Union[List[str], bool]:
     """
-    Gets the final tokens for valid strings as a list of strings, only for valid syntax,
-    where tokens are (no whitespace included)
-    \\ values for lambdas
-    valid variable names
-    opening and closing parenthesis
-    Note that dots are replaced with corresponding parenthesis
-
-    :param s_: the input string
-    :param association_type: If not None, add brackets to make expressions non-ambiguous
-    :return: A List of tokens (strings) if a valid input, otherwise False
+    Tokenizes and parses the given string based on lambda calculus rules.
+    Converts valid strings into a list of tokens, including variables and parentheses.
+    :param s_: The input string.
+    :param association_type: If not None, add brackets to make expressions non-ambiguous.
+    :return: A list of tokens if the input is valid, or False otherwise.
     """
     global errorMsg
     s = handleAbstraction(s_)
@@ -325,7 +379,7 @@ def parse_tokens(s_: str, association_type: Optional[str] = None) -> Union[List[
     if recurring_stuff == False:
         tokenArr = False
         return tokenArr
-    recurring_stuff = recurring_stuff.replace(")(",")_(")
+    recurring_stuff = recurring_stuff.replace(")(", ")_(")
 
     for item in s.split(" "):
         s_despaced += item
@@ -333,30 +387,24 @@ def parse_tokens(s_: str, association_type: Optional[str] = None) -> Union[List[
     for item in recurring_stuff.split("_"):
         if item != "" and item != " ":
             r_despaced += item
-    r_despaced = r_despaced.replace(" ","")
+    r_despaced = r_despaced.replace(" ", "")
     if s_despaced != r_despaced:
         tokenArr = False
-        #print("\nERROR - PARSE MISMATCH: ",s,s_despaced,r_despaced) ## comment this out!
         for msg in errorMsg:
             print(msg)
-        print("\n") ## make into for loop to print individual error msgs
-    
+        print("\n")
     elif recurring_stuff != "":
-        tokenArr = recurring_stuff.split("_") 
-        
-        
+        tokenArr = recurring_stuff.split("_")
     else:
         tokenArr = False
-    errorMsg = []         
+    errorMsg = []
     return tokenArr
 
 def read_lines_from_txt_check_validity(fp: [str, os.PathLike]) -> None: # type: ignore
     """
-    Reads each line from a .txt file, and then
-    parses each string  to yield a tokenized list of strings for printing, joined by _ characters
-    In the case of a non-valid line, the corresponding error message is printed (not necessarily within
-    this function, but possibly within the parse_tokens function).
-    :param lines: The file path of the lines to parse
+    Reads each line from a .txt file, checks its validity, and prints the tokenized output.
+    In case of an invalid line, error messages are printed.
+    :param fp: The file path of the lines to parse.
     """
     lines = read_lines_from_txt(fp)
     valid_lines = []
@@ -364,18 +412,15 @@ def read_lines_from_txt_check_validity(fp: [str, os.PathLike]) -> None: # type: 
         tokens = parse_tokens(l)
         if tokens:
             valid_lines.append(l)
-            print(f"The tokenized string for input string \'{l}\' is \'{'_'.join(tokens)}\'")
+            print(f"The tokenized string for input string '{l}' is '{'_'.join(tokens)}'")
     if len(valid_lines) == len(lines):
-        print(f"All lines are valid")
+        print("All lines are valid")
 
 def read_lines_from_txt_output_parse_tree(fp: [str, os.PathLike]) -> None: # type: ignore
     """
-    Reads each line from a .txt file, and then
-    parses each string to yield a tokenized output string, to be used in constructing a parse tree. The
-    parse tree should call print_tree() to print its content to the console.
-    In the case of a non-valid line, the corresponding error message is printed (not necessarily within
-    this function, but possibly within the parse_tokens function).
-    :param fp: The file path of the lines to parse
+    Reads each line from a .txt file, tokenizes it, and constructs a parse tree from the tokens.
+    Prints the parse tree using the print_tree() method.
+    :param fp: The file path of the lines to parse.
     """
     lines = read_lines_from_txt(fp)
     print(parse_tokens(lines[0]))
@@ -388,139 +433,93 @@ def read_lines_from_txt_output_parse_tree(fp: [str, os.PathLike]) -> None: # typ
 
 def add_associativity(s_: List[str], association_type: str = "left") -> List[str]:
     """
-    :param s_: A list of string tokens
-    :param association_type: a string in [`left`, `right`]
-    :return: List of strings, with added parenthesis that disambiguates the original expression
+    Adds parentheses to a list of tokens to make expressions non-ambiguous.
+    :param s_: A list of string tokens.
+    :param association_type: A string indicating associativity ('left' or 'right').
+    :return: A list of strings with added parentheses.
     """
-
-    # TODO Optional
-    s = s_[:]  # Don't modify original string
+    s = s_[:]
     return []
 
-
-# This function finds the most outer bracket for a string list
 def matchParantheses(tokens):
+    """
+    Finds the indices of matching parentheses in a list of tokens.
+    :param tokens: A list of tokens.
+    :return: A tuple with the indices of the first matching parentheses, or (-1, -1) if not found.
+    """
     first_index = -1
     for i, token in enumerate(tokens):
         if token == '(':
             first_index = i
             break
 
-    # If no opening parenthesis is found, return (-1, -1) as an error signal
     if first_index == -1:
         return -1, -1
 
-    # Initialize a counter for open parentheses starting from the first opening parenthesis
     open_count = 0
-    # Loop through the tokens starting from the first opening parenthesis
     for index in range(first_index, len(tokens)):
         token = tokens[index]
-        # Increment the count for each opening parenthesis
         if token == '(':
             open_count += 1
-        # Decrement the count for each closing parenthesis
         elif token == ')':
             open_count -= 1
-            # When count reaches zero, it means we've matched the initial opening parenthesis
         if open_count == 0:
             return first_index, index
 
-    # If no match is found, return (-1, -1) to indicate an error
     return -1, -1
 
-
-
-
-# This function recursivly builds a tree from a string list "tokens"
 def build_parse_tree_rec(tokens: List[str], node: Optional[Node] = None) -> Node:
     """
-    An inner recursive inner function to build a parse tree
-    :param tokens: A list of token strings
-    :param node: A Node object
-    :return: a node with children whose tokens are variables, parenthesis, slashes, or the inner part of an expression
+    Recursively builds a parse tree from a list of tokens.
+    :param tokens: A list of token strings.
+    :param node: A Node object.
+    :return: A node with children corresponding to the parsed tokens.
     """
-    
-    if(len(tokens) == 1):
+    if len(tokens) == 1:
         return Node(tokens)
-    
-    # If there is no root node
     elif not node:
         node = build_parse_tree_rec(tokens, Node(tokens))
-
     else:
         index = 0
-        while(index < len(tokens)):
-
-            # If the token is a variable name with a length equal to 1
-            if len(tokens[index]) == 1 and tokens[index] in alphabet_chars : #and tokens[index] != "("
-                #print("ChildVar1: " + tokens[index])
+        while index < len(tokens):
+            if len(tokens[index]) == 1 and tokens[index] in alphabet_chars:
                 node.add_child_node(Node(tokens[index]))
-                index = index + 1
-                
-            # If the token is a variable name with a length greater than 1
+                index += 1
             elif len(tokens[index]) > 1:
-                #print("ChildVar2: " + tokens[index])                           
                 node.add_child_node(Node(tokens[index]))
-                index = index + 1
-                
-            # If the token is a opening bracket
+                index += 1
             elif tokens[index] == "(":
                 openingBracketIndex, closingBracketIndex = matchParantheses(tokens)
-                #openingBracketIndex += index
-                #closingBracketIndex += index
-                #print(tokens[openingBracketIndex:closingBracketIndex])
-                # If a closing bracket is not found
-                if closingBracketIndex < index and not closingBracketIndex == -1:
+                if closingBracketIndex < index and closingBracketIndex != -1:
                     closingBracketIndex += index
                 if closingBracketIndex == -1:
-                    #print("No closing bracket found")
                     print(tokens)
                 if closingBracketIndex < index:
                     closingBracketIndex += index
                 else:
-                    #print("ChildOpenBrack: " + tokens[index])
                     node.add_child_node(Node(tokens[index]))
-                    #print("Recursing to subnode: "+str(tokens[openingBracketIndex + 1 : closingBracketIndex]))
-                    node.add_child_node(build_parse_tree_rec(tokens[index +1: closingBracketIndex]))
-                    #print("ChildCloseBrack: " + tokens[closingBracketIndex])
-                    node.add_child_node(Node(tokens[closingBracketIndex]))  
+                    node.add_child_node(build_parse_tree_rec(tokens[index + 1: closingBracketIndex]))
+                    node.add_child_node(Node(tokens[closingBracketIndex]))
                     index = closingBracketIndex + 1
-                                     
-            # If the token is a lambda sign("\")
             elif tokens[index] == "\\":
                 node.add_child_node(Node(tokens[index]))
-                # Adding variable that goes along with lambda
-                index = index + 1
+                index += 1
                 node.add_child_node(Node(tokens[index]))
-                index = index + 1
-            
+                index += 1
             else:
-                # print("Token \' " + tokens[index] + " \' not accounted for in if statements, here is the fragment " + str(tokens[:index]))
-                # print(tokens)
-                index += 1 ## DOESNT WORK, JUST PASS THIS CASE
-                #input()
-    
+                index += 1
     return node
 
 def build_parse_tree(tokens: List[str]) -> ParseTree:
     """
-    Build a parse tree from a list of tokens
-    :param tokens: List of tokens
-    :return: parse tree
+    Builds a complete parse tree from a list of tokens.
+    :param tokens: List of tokens representing the parsed input.
+    :return: A ParseTree object with the parsed tokens.
     """
     pt = ParseTree(build_parse_tree_rec(tokens))
     return pt
 
-
 if __name__ == "__main__":
-
-    #string = "a_b_c"
-    #newLst = string.rsplit("_")
-    # Check other examples like "a_b_c" from valid cases to see if work
-    
-    # tokenTree = build_parse_tree(['\\', 'x', '(', 'x', '(', 'b', 'c', ')', ')'])
-    # tokenTree.print_tree()
-    
     print("\n\nChecking valid examples...")
     read_lines_from_txt_check_validity(valid_examples_fp)
     read_lines_from_txt_output_parse_tree(valid_examples_fp)
