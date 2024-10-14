@@ -348,6 +348,11 @@ def expr(s):
                 return ""
         elif s[x] == " " or s[x] == ")":
             return expr(s[x+1:])
+        # elif s[x] == ".":
+        #     checkforperiod = bool_var(s[x+1:])
+        #     if not checkforperiod:
+        #         return 
+        #     return 
         elif s[x] in alphabet_chars:
             if bool_var(s[x:]):
                 return var(s[x:])
